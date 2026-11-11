@@ -1,8 +1,8 @@
 [{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "io.github.siyam7e.twa",
-        "sha256_cert_fingerprints": ["9B:BC:51:15:E9:97:E0:3C:3A:BD:04:5D:AD:F3:FB:BE:8A:CB:88:C6:85:6B:C0:04:35:68:B8:69:F6:24:F5:76"]
-      }
-    }]
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "io.github.siyam7e.twa",
+    "sha256_cert_fingerprints": ["9B:BC:51:15:E9:97:E0:3C:3A:BD:04:5D:AD:F3:FB:BE:8A:CB:88:C6:85:6B:C0:04:35:68:B8:69:F6:24:F5:76"]
+  }
+}]
