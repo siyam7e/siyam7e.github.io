@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="bn"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-visual">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-visual">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="UIF">
 <title>United Investments Foundation</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Allura&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0A1430"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
 <script>document.documentElement.classList.add("dark");</script>
 <style>
@@ -419,6 +423,8 @@ body.lo .top,body.lo main{display:none!important}
 .pdot{display:inline-block;flex:none;width:8px;height:8px;border-radius:50%;background:currentColor;animation:pdp 1.8s ease-in-out infinite}.att .pdot{position:absolute;right:30px;top:17px;color:#F7C766}.att.dg .pdot{color:#FF9A90}
 @keyframes pdp{0%,100%{opacity:1}50%{opacity:.25}}
 .top .av{cursor:pointer;transition:transform .15s ease;-webkit-tap-highlight-color:transparent}.top .av:active{transform:scale(.9)}.avw{position:relative;display:inline-flex;flex:none}.avw::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid transparent;border-top-color:#F0CD6E;border-right-color:rgba(240,205,110,.45);opacity:0;pointer-events:none;transition:opacity .3s ease}.avw.rf::after{opacity:1;animation:avrf .8s linear infinite}.avw.rfo::after{opacity:0;animation:avrf .8s linear infinite}@keyframes avrf{to{transform:rotate(360deg)}}#side .br{cursor:pointer;-webkit-tap-highlight-color:transparent}#side .br:active img{transform:scale(.94)}#side .br img{transition:transform .15s ease}
+.top{padding-top:calc(10px + env(safe-area-inset-top))!important}#side{padding-top:calc(16px + env(safe-area-inset-top))!important}#login{padding-top:calc(max(84px,14vh) + env(safe-area-inset-top))}
+.ioshint{display:none;margin:14px 0 0;padding:10px 12px;border:1px solid rgba(212,165,55,.55);border-radius:12px;background:rgba(212,165,55,.10);color:#F3D27A;font-size:13px;line-height:1.6;text-align:center}.ioshint.on{display:block}.ioshint b{color:#fff}
 main#m{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 #side .gh{letter-spacing:0!important;font-size:12.5px;margin:18px 10px 6px;text-transform:none}
 #side .it{font-size:15px;gap:12px;padding:8px 10px;align-items:center}#side .it .ii{flex:none;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:16px;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
@@ -455,7 +461,7 @@ main#m{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 </style></head><body>
 <div id="login"><div class="lc2"><div class="lgw2"><img class="llogo" alt="UIF" id="llogo"></div><h1>United Investments Foundation</h1><p id="lt2">ঐক্য • বিনিয়োগ • উন্নয়ন</p>
 <input id="lu" onkeydown="if(event.key=='Enter'){event.preventDefault();document.getElementById('lp').focus()}" enterkeyhint="next" onfocus="lt(1)" onblur="lt(0)" autocomplete="username" autocapitalize="none" spellcheck="false"><input id="lp" onfocus="lt(1)" onblur="lt(0)" type="password" autocomplete="current-password" enterkeyhint="go" onkeydown="if(event.key=='Enter')doLogin()">
-<button class="b p gl" id="lb" onclick="doLogin()">লগইন করুন</button><div id="le2"></div><p class="lhelp" id="lh">পাসওয়ার্ড ভুলে গেলে অ্যাডমিনের সঙ্গে যোগাযোগ করুন</p></div><div class="sigw lsig"><a class="badge gl" href="https://www.facebook.com/siyam7e" target="_blank" rel="noopener"><small>Developed by</small><span>Siyam Khan</span></a></div></div><div id="toast"></div>
+<button class="b p gl" id="lb" onclick="doLogin()">লগইন করুন</button><div id="le2"></div><div class="ioshint" id="ioshint"></div><p class="lhelp" id="lh">পাসওয়ার্ড ভুলে গেলে অ্যাডমিনের সঙ্গে যোগাযোগ করুন</p></div><div class="sigw lsig"><a class="badge gl" href="https://www.facebook.com/siyam7e" target="_blank" rel="noopener"><small>Developed by</small><span>Siyam Khan</span></a></div></div><div id="toast"></div>
 <div id="ov" onclick="mn(0)"></div><aside id="side"></aside>
 <header class="top"><button class="ib" onclick="mn(1)">☰</button><h2 id="ttl"></h2><button class="ib" id="bell" onclick="bellGo()">🔔</button><span class="avw"><img class="av" alt="UIF" src="" onclick="logoHome('top')" role="button"></span></header><main id="m"></main><div id="busy"></div><div id="pv"></div><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="rgA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE9A3"/><stop offset=".5" stop-color="#E8B83A"/><stop offset="1" stop-color="#A8761A"/></linearGradient><linearGradient id="rgC" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9CC2FF"/><stop offset="1" stop-color="#2F62D0"/></linearGradient><linearGradient id="rgM" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E2C6FF"/><stop offset="1" stop-color="#7B3FE4"/></linearGradient></defs></svg>
 <script>
@@ -676,7 +682,8 @@ function vpLater(){D.polls.filter(q=>pOpen(q)&&D.mv[q.id]===undefined).forEach(q
 function pollAdd(){const q=fv("v_q");if(!q)return toast(t("vq")+"?",1);const opts=VK=="yn"?[t("vyes"),t("vno")]:fv("v_o").split("\n").map(x=>x.trim()).filter(Boolean);if(opts.length<2)return toast(t("vopts")+"?",1);act("poll_add",{question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r"),end:dmy(fv("v_e"))})}
 function pollClose(id,open){act("poll_close",{id,open})}
 function pollDel(id){if(confirm(t("vq2")))act("poll_del",{id},t("delm"))}
-const VER="৫৬";let LGB=0;
+const VER="৫৭";
+(function(){try{const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),sa=navigator.standalone||matchMedia("(display-mode: standalone)").matches;if(!ios||sa)return;const f=()=>{const e=document.getElementById("ioshint");if(!e)return;e.innerHTML=L=="en"?"📱 To install on iPhone: click <b>Share ⬆️</b> below → <b>Add to Home Screen</b>":"📱 আইফোনে অ্যাপ বসাতে নিচের <b>Share ⬆️</b> → <b>Add to Home Screen</b> ক্লিক করুন";e.classList.add("on")};document.readyState=="loading"?document.addEventListener("DOMContentLoaded",f):f()}catch(e){}})();let LGB=0;
 async function logoHome(src){if(TOUR)tourEnd();hsClose();vpClose();const pv=document.getElementById("pv");if(pv&&pv.classList.contains("on"))closePV();
 if(tab!="home"){go("home");return}if(src=="side"){mn(0);return}
 if(scrollY>40){scrollTo({top:0,behavior:"smooth"});return}
@@ -690,7 +697,7 @@ return`<div class="br" onclick="logoHome('side')" role="button"><img src="${U}">
 +G("g_acc",[it("mon","📅","dp"),it("fin","⚖️","fn"),it("inv","📈","inv"),it("led","📒","ledm"),it("rep","📄","rt"),...((SET.years||[]).length?[it("old","🗃️","oldy")]:[])])
 +G("g_fnd",[it("mem","👥","mem"),it("not","📣","not","not"),it("vote","🗳️","vtm","vote"),it("rules","📜","rl","rules"),...(SET.msgr?[`<button class="it" onclick="openMsgr()"><span class="ii">💬</span><span class="itl">${t("msgr")}</span><em class="ext">↗</em></button>`]:[])])
 +`<div class="gh">${t("g_set")}</div>`+it("help","❓","help")+`<div class="it lng"><span class="ii">🌐</span><span class="itl">${t("lng")}</span><span class="seg2"><button class="${L=="bn"?"on":""}" onclick="setLang('bn')">বাংলা</button><button class="${L=="en"?"on":""}" onclick="setLang('en')">English</button></span></div>`
-+(API_URL&&TOK?it("pw","🔑","pwc")+`<div class="sdiv"></div><button class="it lo" onclick="logout()"><span class="ii">↪️</span><span class="itl">${t("lgt")}</span></button>`:"")+`<div class="vern">${t("ver")} · v${L=="bn"?VER:"56"}</div>`}
++(API_URL&&TOK?it("pw","🔑","pwc")+`<div class="sdiv"></div><button class="it lo" onclick="logout()"><span class="ii">↪️</span><span class="itl">${t("lgt")}</span></button>`:"")+`<div class="vern">${t("ver")} · v${L=="bn"?VER:"57"}</div>`}
 function setLang(l){if(L==l)return;L=l;lss('uif_lang',L);SK='';render()}
 function sideBadges(){const v={cash:pendN(),not:unseenN(),vote:unvN(),rules:unseenR()};document.querySelectorAll("#side .ib2").forEach(e=>{const n=v[e.dataset.b]||0;e.textContent=n?bnD(n):"";e.style.display=n?"":"none"})}
 /* ---------- সাহায্য ---------- */
