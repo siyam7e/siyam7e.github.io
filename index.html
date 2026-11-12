@@ -501,7 +501,7 @@ D.pay=(o.Payments||[]).map(r=>({id:r[0],at:r[1],m:r[2],l4:r[3],amt:num(r[4]),dat
 function stK(v){return{"পেন্ডিং":"p","জমা হয়েছে":"a","হয়নি":"r","বাতিল":"c"}[String(v||"").trim()]||"p"}
 async function load(){
 if(API_URL){if(!TOK){showLogin();return}
- try{const j=await api("data");USER=j.user;CASHON=j.cashOn!==false;lss("uif_user",JSON.stringify(USER));parseAll(j.data);saveCache(j);LOADED=1;return true}catch(e){if(e.message!="auth")toast(t("e_net"),1)}return}
+ try{const j=await api("data");USER=j.user;CASHON=j.cashOn!==false;lss("uif_user",JSON.stringify(USER));parseAll(j.data);saveCache(j);LOADED=1;return true}catch(e){if(e.message!="auth")toast(e.message=="net"?t("e_net"):"⚠️ "+e.message,1)}return}
 if(!SHEET_ID)return;const g=n=>fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${n}`).then(r=>{if(!r.ok)throw 0;return r.text()}).then(csv);
 try{const N=["Contributions","Fines","Summary","Investments","Notices"],a=await Promise.all(N.map(g)),o={};N.forEach((k,i)=>o[k]=a[i]);
 const b=await Promise.all(["Members","Images"].map(n=>g(n).catch(()=>[])));o.Members=b[0];o.Images=b[1];parseAll(o);LOADED=1}catch(e){document.getElementById("m").innerHTML="⚠️ ডেটা লোড হয়নি / Data load failed"}}
@@ -509,7 +509,7 @@ const b=await Promise.all(["Members","Images"].map(n=>g(n).catch(()=>[])));o.Mem
 const lsg=k=>{try{return localStorage.getItem(k)}catch(e){return null}},lss=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
 let SET=(()=>{try{return JSON.parse(localStorage.getItem("uif_set")||"null")||{}}catch(e){return{}}})(),CASHON=true,TOK=lsg("uif_tok"),USER=(()=>{try{return JSON.parse(lsg("uif_user")||"null")}catch(e){return null}})(),LOADED=0;
 const isMod=()=>!!(API_URL&&USER&&USER.role=="moderator"),isAdm=()=>!!(API_URL&&USER&&USER.role=="admin"),isStaff=()=>!!(API_URL&&USER&&(USER.role=="admin"||(USER.role=="cashier"&&CASHON)));
-async function api(action,p){const r=await fetch(API_URL,{method:"POST",body:JSON.stringify(Object.assign({action,token:TOK},p||{}))});const j=await r.json();
+async function api(action,p){let r,j;try{r=await fetch(API_URL,{method:"POST",credentials:"omit",redirect:"follow",body:JSON.stringify(Object.assign({action,token:TOK},p||{}))})}catch(e){throw new Error("net")}if(!r.ok)throw new Error("http "+r.status);const tx=await r.text();try{j=JSON.parse(tx)}catch(e){throw new Error("srv:"+(tx.replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim().slice(0,90)||"empty"))}
 if(j.auth===false){logout(1);if(j.kicked){const e=document.getElementById("le2");if(e)e.textContent=t("kick")}throw new Error("auth")}if(!j.ok)throw new Error(j.error||"error");return j}
 let LAST=0;
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState!="visible"||!API_URL||!TOK||!LOADED||Date.now()-LAST<90000)return;
@@ -676,7 +676,7 @@ function vpLater(){D.polls.filter(q=>pOpen(q)&&D.mv[q.id]===undefined).forEach(q
 function pollAdd(){const q=fv("v_q");if(!q)return toast(t("vq")+"?",1);const opts=VK=="yn"?[t("vyes"),t("vno")]:fv("v_o").split("\n").map(x=>x.trim()).filter(Boolean);if(opts.length<2)return toast(t("vopts")+"?",1);act("poll_add",{question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r"),end:dmy(fv("v_e"))})}
 function pollClose(id,open){act("poll_close",{id,open})}
 function pollDel(id){if(confirm(t("vq2")))act("poll_del",{id},t("delm"))}
-const VER="৫৫";let LGB=0;
+const VER="৫৬";let LGB=0;
 async function logoHome(src){if(TOUR)tourEnd();hsClose();vpClose();const pv=document.getElementById("pv");if(pv&&pv.classList.contains("on"))closePV();
 if(tab!="home"){go("home");return}if(src=="side"){mn(0);return}
 if(scrollY>40){scrollTo({top:0,behavior:"smooth"});return}
@@ -690,7 +690,7 @@ return`<div class="br" onclick="logoHome('side')" role="button"><img src="${U}">
 +G("g_acc",[it("mon","📅","dp"),it("fin","⚖️","fn"),it("inv","📈","inv"),it("led","📒","ledm"),it("rep","📄","rt"),...((SET.years||[]).length?[it("old","🗃️","oldy")]:[])])
 +G("g_fnd",[it("mem","👥","mem"),it("not","📣","not","not"),it("vote","🗳️","vtm","vote"),it("rules","📜","rl","rules"),...(SET.msgr?[`<button class="it" onclick="openMsgr()"><span class="ii">💬</span><span class="itl">${t("msgr")}</span><em class="ext">↗</em></button>`]:[])])
 +`<div class="gh">${t("g_set")}</div>`+it("help","❓","help")+`<div class="it lng"><span class="ii">🌐</span><span class="itl">${t("lng")}</span><span class="seg2"><button class="${L=="bn"?"on":""}" onclick="setLang('bn')">বাংলা</button><button class="${L=="en"?"on":""}" onclick="setLang('en')">English</button></span></div>`
-+(API_URL&&TOK?it("pw","🔑","pwc")+`<div class="sdiv"></div><button class="it lo" onclick="logout()"><span class="ii">↪️</span><span class="itl">${t("lgt")}</span></button>`:"")+`<div class="vern">${t("ver")} · v${L=="bn"?VER:"55"}</div>`}
++(API_URL&&TOK?it("pw","🔑","pwc")+`<div class="sdiv"></div><button class="it lo" onclick="logout()"><span class="ii">↪️</span><span class="itl">${t("lgt")}</span></button>`:"")+`<div class="vern">${t("ver")} · v${L=="bn"?VER:"56"}</div>`}
 function setLang(l){if(L==l)return;L=l;lss('uif_lang',L);SK='';render()}
 function sideBadges(){const v={cash:pendN(),not:unseenN(),vote:unvN(),rules:unseenR()};document.querySelectorAll("#side .ib2").forEach(e=>{const n=v[e.dataset.b]||0;e.textContent=n?bnD(n):"";e.style.display=n?"":"none"})}
 /* ---------- সাহায্য ---------- */
