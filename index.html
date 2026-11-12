@@ -688,14 +688,14 @@ function vpLater(){D.polls.filter(q=>pOpen(q)&&D.mv[q.id]===undefined).forEach(q
 function pollAdd(){const q=fv("v_q");if(!q)return toast(t("vq")+"?",1);const opts=VK=="yn"?[t("vyes"),t("vno")]:fv("v_o").split("\n").map(x=>x.trim()).filter(Boolean);if(opts.length<2)return toast(t("vopts")+"?",1);act("poll_add",{question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r"),end:dmy(fv("v_e"))})}
 function pollClose(id,open){act("poll_close",{id,open})}
 function pollDel(id){if(confirm(t("vq2")))act("poll_del",{id},t("delm"))}
-const VER="৬০";
+const VER="৬১";
 (function(){try{const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),sa=navigator.standalone||matchMedia("(display-mode: standalone)").matches;if(!ios||sa)return;const f=()=>{const e=document.getElementById("ioshint");if(!e)return;e.innerHTML=L=="en"?"📱 To install on iPhone: click <b>Share ⬆️</b> below → <b>Add to Home Screen</b>":"📱 আইফোনে অ্যাপ বসাতে নিচের <b>Share ⬆️</b> → <b>Add to Home Screen</b> ক্লিক করুন";e.classList.add("on")};document.readyState=="loading"?document.addEventListener("DOMContentLoaded",f):f()}catch(e){}})();let LGB=0;
 async function logoHome(src){if(TOUR)tourEnd();hsClose();vpClose();const pv=document.getElementById("pv");if(pv&&pv.classList.contains("on"))closePV();
 if(tab!="home"){go("home");return}if(src=="side"){mn(0);return}
 if(scrollY>40){scrollTo({top:0,behavior:"smooth"});return}
 if(LGB||!API_URL||!TOK)return;LGB=1;const a=document.querySelector(".top .avw");if(a){a.classList.remove("rfo");a.classList.add("rf")}
 const ok=await load();LGB=0;if(a){a.classList.remove("rf");a.classList.add("rfo");setTimeout(()=>a.classList.remove("rfo"),350)}if(ok){SK="";render();toast(t("rfok"))}}
-function openMsgr(){if(SET.msgr)window.open(SET.msgr,"_blank","noopener")}
+function openMsgr(){const u=String(SET.msgr||"").trim();if(!u)return;if(/Android/i.test(navigator.userAgent)&&/^https:\/\/(m\.me|(www\.)?messenger\.com)\//i.test(u)){location.href="intent://"+u.replace(/^https:\/\//i,"")+"#Intent;scheme=https;package=com.facebook.orca;S.browser_fallback_url="+encodeURIComponent(u)+";end";return}window.open(u,"_blank","noopener")}
 function sideHTML(){const it=(k,ic,lab,b)=>`<button class="it ${tab==k?"on":""}" data-t="${k}" onclick="go('${k}')"><span class="ii">${ic}</span><span class="itl">${t(lab)}</span>${b?`<em class="ib2" data-b="${b}"></em>`:""}</button>`,G=(lab,items)=>items.length?`<div class="gh">${t(lab)}</div>`+items.join(""):"";
 const mg=[...(isAdm()?[it("admin","🛡️","admp")]:[]),...(isStaff()?[it("cash","🗂️","cashp","cash")]:[]),...(isMod()?[it("admin","🛠️","modp")]:[]),...(isAdm()?[it("modv","🛠️","modp")]:[])];
 return`<div class="br" onclick="logoHome('side')" role="button"><img src="${U}"><div><b>United Investments Foundation</b><small>${API_URL&&USER?esc(USER.name)+rbg(USER.name,USER.role):"UIF"}</small></div></div>`
@@ -703,7 +703,7 @@ return`<div class="br" onclick="logoHome('side')" role="button"><img src="${U}">
 +G("g_acc",[it("mon","📅","dp"),it("fin","⚖️","fn"),it("inv","📈","inv"),it("led","📒","ledm"),it("rep","📄","rt"),...((SET.years||[]).length?[it("old","🗃️","oldy")]:[])])
 +G("g_fnd",[it("mem","👥","mem"),it("not","📣","not","not"),it("vote","🗳️","vtm","vote"),it("rules","📜","rl","rules"),...(SET.msgr?[`<button class="it" onclick="openMsgr()"><span class="ii">💬</span><span class="itl">${t("msgr")}</span><em class="ext">↗</em></button>`]:[])])
 +`<div class="gh">${t("g_set")}</div>`+it("help","❓","help")+`<div class="it lng"><span class="ii">🌐</span><span class="itl">${t("lng")}</span><span class="seg2"><button class="${L=="bn"?"on":""}" onclick="setLang('bn')">বাংলা</button><button class="${L=="en"?"on":""}" onclick="setLang('en')">English</button></span></div>`
-+(API_URL&&TOK?it("pw","🔑","pwc")+`<div class="sdiv"></div><button class="it lo" onclick="logout()"><span class="ii">↪️</span><span class="itl">${t("lgt")}</span></button>`:"")+`<div class="vern">${t("ver")} · v${L=="bn"?VER:"60"}</div>`}
++(API_URL&&TOK?it("pw","🔑","pwc")+`<div class="sdiv"></div><button class="it lo" onclick="logout()"><span class="ii">↪️</span><span class="itl">${t("lgt")}</span></button>`:"")+`<div class="vern">${t("ver")} · v${L=="bn"?VER:"61"}</div>`}
 function setLang(l){if(L==l)return;L=l;lss('uif_lang',L);SK='';render()}
 function sideBadges(){const v={cash:pendN(),not:unseenN(),vote:unvN(),rules:unseenR()};document.querySelectorAll("#side .ib2").forEach(e=>{const n=v[e.dataset.b]||0;e.textContent=n?bnD(n):"";e.style.display=n?"":"none"})}
 /* ---------- সাহায্য ---------- */
