@@ -32,7 +32,14 @@ function doGet() { return out({ ok: true, msg: "UIF API \u099a\u09be\u09b2\u09c1
 function doPost(e) {
   try {
     const q = JSON.parse((e && e.postData && e.postData.contents) || "{}");
-    if (q.action === "login") return out(login(q.username, q.password));
+    if (q.action === "login") {   // \u09b2\u0997\u0987\u09a8\u09c7\u09b0 \u09b8\u09be\u09a5\u09c7\u0987 \u09b8\u09ac \u09a4\u09a5\u09cd\u09af (\u098f\u0995\u09ac\u09be\u09b0\u09c7, \u09a6\u09cd\u09b0\u09c1\u09a4)
+      const r = login(q.username, q.password);
+      if (r.ok && q.withData) {
+        const lu = findUser(r.user.username);
+        if (lu) { r.user.adminSet = !!lu.apw; r.cashOn = cashOn(); r.settings = settings(); r.data = readAll(lu.role === "admin", lu, lu.role === "moderator"); }
+      }
+      return out(r);
+    }
     const u = auth(q.token);
     if (!u) {
       const kicked = q.token && CacheService.getScriptCache().get("k_" + q.token);
@@ -55,7 +62,7 @@ function doPost(e) {
     }
     if (q.action === "vote") {
       const lock2 = LockService.getScriptLock(); lock2.waitLock(20000);
-      try { const r = castVote(u, q); logAct(u, q); SpreadsheetApp.flush(); return out(Object.assign({ ok: true }, r)); }
+      try { const r = castVote(u, q); logAct(u, q); SpreadsheetApp.flush(); dropRS(); return out(Object.assign({ ok: true }, r)); }
       finally { lock2.releaseLock(); }
     }
     const isPay = String(q.action || "").indexOf("pay_") === 0;
@@ -68,7 +75,7 @@ function doPost(e) {
     try {
       const r = isPay ? payAction(q, u) : adminAction(q, u);
       logAct(u, q);
-      SpreadsheetApp.flush();
+      SpreadsheetApp.flush(); dropRS();
       return out(Object.assign({ ok: true }, r || {}));
     } finally { lock.releaseLock(); }
   } catch (err) {
@@ -168,10 +175,19 @@ function pruneTokens(username) {   // \u098f\u0995\u099c\u09a8\u09c7\u09b0 \u09b
 }
 
 /* ---------- read ---------- */
+// \u09b8\u09ac \u09b6\u09bf\u099f \u09aa\u09a1\u09bc\u09be \u0995\u09af\u09bc\u09c7\u0995 \u09b8\u09c7\u0995\u09c7\u09a8\u09cd\u09a1\u09c7\u09b0 \u099c\u09a8\u09cd\u09af \u099c\u09ae\u09bf\u09af\u09bc\u09c7 \u09b0\u09be\u0996\u09be \u09b9\u09af\u09bc (\u09a6\u09cd\u09b0\u09c1\u09a4 \u09b2\u09cb\u09a1); \u09af\u09c7\u0995\u09cb\u09a8\u09cb \u09aa\u09b0\u09bf\u09ac\u09b0\u09cd\u09a4\u09a8\u09c7 \u09b8\u09be\u09a5\u09c7 \u09b8\u09be\u09a5\u09c7 \u09ae\u09c1\u099b\u09c7 \u09af\u09be\u09af\u09bc
+function readShared() {
+  const c = CacheService.getScriptCache();
+  try { const hit = c.get("rs1"); if (hit) return JSON.parse(hit); } catch (e) {}
+  const d = {}; READ_SHEETS.forEach(function (n) { d[n] = rows(n); });
+  try { const js = JSON.stringify(d); if (js.length < 45000) c.put("rs1", js, 20); } catch (e) {}
+  return d;
+}
+function dropRS() { try { CacheService.getScriptCache().remove("rs1"); } catch (e) {} }
 function readAll(isAdmin, u, isMod) {
   const d = {};
   rulesSheet();
-  READ_SHEETS.forEach(function (n) { d[n] = rows(n); });
+  const sh0 = readShared(); READ_SHEETS.forEach(function (n) { d[n] = sh0[n] || []; });
   // \u09ad\u09cb\u099f: \u09b8\u09ac\u09be\u0987 \u09b6\u09c1\u09a7\u09c1 \u09ae\u09cb\u099f \u09b8\u0982\u0996\u09cd\u09af\u09be \u09a6\u09c7\u0996\u09ac\u09c7\u09a8; \u0995\u09c7 \u0995\u09c0 \u09a6\u09bf\u09af\u09bc\u09c7\u099b\u09c7\u09a8 \u09b6\u09c1\u09a7\u09c1 \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8
   const vs = rows("Votes"), cnt = {}, mine = {};
   vs.forEach(function (r) { const id = String(r[0]), c = Number(r[3]); if (!cnt[id]) cnt[id] = []; cnt[id][c] = (cnt[id][c] || 0) + 1; if (u && String(r[1]) === u.username) mine[id] = c; });
