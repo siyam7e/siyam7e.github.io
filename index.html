@@ -364,7 +364,7 @@ body.lo .top,body.lo main{display:none!important}
 #login .gl::before{display:none}
 #login .b.p:active{transform:scale(.97);filter:brightness(1.12)}
 #boot,#boot_x{position:fixed;inset:0;z-index:45;background:#071433;color:#8D9AB8;font-size:13px;transition:opacity .28s ease}#boot.out,#boot_x.out{opacity:0;pointer-events:none}
-#boot img,#boot_x img{position:absolute;left:50%;top:50%;width:128px;height:128px;margin:-64px 0 0 -64px;border-radius:50%}#boot .spin,#boot_x .spin{position:absolute;left:50%;top:calc(50% + 96px);margin-left:-13px}#boot p,#boot_x p{position:absolute;left:0;right:0;top:calc(50% + 152px);text-align:center}#boot p,#boot_x p{margin:0}
+#boot img,#boot_x img{position:absolute;left:50%;top:50%;width:128px;height:128px;margin:-64px 0 0 -64px;border-radius:50%}#boot .spin,#boot_x .spin{position:absolute;left:50%;top:calc(50% + 96px);margin-left:-13px}#boot p,#boot_x p{position:absolute;left:0;right:0;top:calc(50% + 112px);text-align:center}#boot p,#boot_x p{margin:0}
 .nt{position:relative}.nt.new{background:linear-gradient(90deg,rgba(212,165,55,.12),transparent 70%);box-shadow:inset 3px 0 0 #D4A537}
 .nwb{position:absolute;top:10px;right:12px;font-style:normal;font-size:11px;font-weight:700;background:#D4A537;color:#071433;border-radius:9px;padding:2px 8px}
 .rdb{margin-top:10px;color:#5BE3A6!important;border-color:rgba(91,227,166,.5)!important}.nra{display:flex;justify-content:flex-end;padding:10px 14px 0}
@@ -423,8 +423,9 @@ body.lo .top,body.lo main{display:none!important}
 .pdot{display:inline-block;flex:none;width:8px;height:8px;border-radius:50%;background:currentColor;animation:pdp 1.8s ease-in-out infinite}.att .pdot{position:absolute;right:30px;top:17px;color:#F7C766}.att.dg .pdot{color:#FF9A90}
 @keyframes pdp{0%,100%{opacity:1}50%{opacity:.25}}
 .top .av{cursor:pointer;transition:transform .15s ease;-webkit-tap-highlight-color:transparent}.top .av:active{transform:scale(.9)}.avw{position:relative;display:inline-flex;flex:none}.avw::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid transparent;border-top-color:#F0CD6E;border-right-color:rgba(240,205,110,.45);opacity:0;pointer-events:none;transition:opacity .3s ease}.avw.rf::after{opacity:1;animation:avrf .8s linear infinite}.avw.rfo::after{opacity:0;animation:avrf .8s linear infinite}@keyframes avrf{to{transform:rotate(360deg)}}#side .br{cursor:pointer;-webkit-tap-highlight-color:transparent}#side .br:active img{transform:scale(.94)}#side .br img{transition:transform .15s ease}
-.top{padding-top:calc(10px + env(safe-area-inset-top))!important}#side{padding-top:calc(16px + env(safe-area-inset-top))!important}#login{padding-top:calc(max(84px,14vh) + env(safe-area-inset-top))}
+.top{padding-top:calc(10px + env(safe-area-inset-top))!important}#side{padding-top:calc(16px + env(safe-area-inset-top))!important}#login{padding:calc(84px + env(safe-area-inset-top)) 20px calc(20px + 7vh);overflow-y:auto}#login>.lc2{margin-top:auto}#login>.lsig{margin-bottom:auto}#login.typing>.lc2{margin-top:0}#login .lc2 h1{margin-bottom:8px!important}
 .ioshint{display:none;margin:14px 0 0;padding:10px 12px;border:1px solid rgba(212,165,55,.55);border-radius:12px;background:rgba(212,165,55,.10);color:#F3D27A;font-size:13px;line-height:1.6;text-align:center}.ioshint.on{display:block}.ioshint b{color:#fff}
+#boot .bbar,#boot_x .bbar{position:absolute;left:50%;top:calc(50% + 92px);width:120px;margin-left:-60px;height:3px;border-radius:3px;background:rgba(212,165,55,.18);overflow:hidden}#boot .bbar::after,#boot_x .bbar::after{content:"";position:absolute;top:0;left:0;height:100%;width:45%;border-radius:3px;background:linear-gradient(90deg,transparent,#F0CD6E,#FFE7A0,#F0CD6E,transparent);animation:bsl 1.25s cubic-bezier(.45,0,.55,1) infinite;will-change:transform}@keyframes bsl{from{transform:translateX(-110%)}to{transform:translateX(250%)}}
 main#m{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 #side .gh{letter-spacing:0!important;font-size:12.5px;margin:18px 10px 6px;text-transform:none}
 #side .it{font-size:15px;gap:12px;padding:8px 10px;align-items:center}#side .it .ii{flex:none;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:16px;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
@@ -523,7 +524,7 @@ const pv=document.getElementById("pv");if(pv&&pv.classList.contains("on"))return
 const form=["pay","cash","admin"].includes(tab);load().then(()=>{if(!TOK)return;if(form){const bl=document.getElementById("bell");if(bl)bl.dataset.n=(unseenN()+unseenR()+unvN()+pendN())||""}else render(1)})});
 function saveCache(j){LAST=Date.now();if(j.settings){SET=j.settings;lss("uif_set",JSON.stringify(SET))}try{lss("uif_cache",JSON.stringify({u:j.user.username,c:j.cashOn!==false,d:j.data}))}catch(e){}}
 function readCache(){try{const c=JSON.parse(lsg("uif_cache")||"null");return c&&USER&&c.u==USER.username&&c.d?c:null}catch(e){return null}}
-function boot(on){let b=document.getElementById("boot");if(!on){if(b&&!b.classList.contains("out")){b.classList.add("out");b.id="boot_x";setTimeout(()=>b.remove(),300)}return}if(!b){b=document.createElement("div");b.id="boot";b.innerHTML=`<img src="${U}" alt="UIF"><div class="spin"></div><p>${L=="bn"?"লোড হচ্ছে…":"Loading…"}</p>`;document.body.appendChild(b)}}
+function boot(on){let b=document.getElementById("boot");if(!on){if(b&&!b.classList.contains("out")){b.classList.add("out");b.id="boot_x";setTimeout(()=>b.remove(),300)}return}if(!b){b=document.createElement("div");b.id="boot";b.innerHTML=`<img src="${U}" alt="UIF"><div class="bbar"></div><p>${L=="bn"?"লোড হচ্ছে…":"Loading…"}</p>`;document.body.appendChild(b)}}
 function offline(){render();document.getElementById("m").innerHTML=`<section class="card"><div class="ems">⚠️ ${t("e_net")}<br><br><button class="b p" onclick="location.reload()">🔄 ${L=="bn"?"আবার চেষ্টা করুন":"Try again"}</button></div></section>`}
 function lt(on){document.getElementById("login").classList.toggle("typing",!!on)}
 function shk(){const c=document.querySelector(".lc2");c.classList.remove("shake");void c.offsetWidth;c.classList.add("shake");if(navigator.vibrate)navigator.vibrate(50)}
@@ -682,7 +683,7 @@ function vpLater(){D.polls.filter(q=>pOpen(q)&&D.mv[q.id]===undefined).forEach(q
 function pollAdd(){const q=fv("v_q");if(!q)return toast(t("vq")+"?",1);const opts=VK=="yn"?[t("vyes"),t("vno")]:fv("v_o").split("\n").map(x=>x.trim()).filter(Boolean);if(opts.length<2)return toast(t("vopts")+"?",1);act("poll_add",{question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r"),end:dmy(fv("v_e"))})}
 function pollClose(id,open){act("poll_close",{id,open})}
 function pollDel(id){if(confirm(t("vq2")))act("poll_del",{id},t("delm"))}
-const VER="৫৭";
+const VER="৫৮";
 (function(){try{const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),sa=navigator.standalone||matchMedia("(display-mode: standalone)").matches;if(!ios||sa)return;const f=()=>{const e=document.getElementById("ioshint");if(!e)return;e.innerHTML=L=="en"?"📱 To install on iPhone: click <b>Share ⬆️</b> below → <b>Add to Home Screen</b>":"📱 আইফোনে অ্যাপ বসাতে নিচের <b>Share ⬆️</b> → <b>Add to Home Screen</b> ক্লিক করুন";e.classList.add("on")};document.readyState=="loading"?document.addEventListener("DOMContentLoaded",f):f()}catch(e){}})();let LGB=0;
 async function logoHome(src){if(TOUR)tourEnd();hsClose();vpClose();const pv=document.getElementById("pv");if(pv&&pv.classList.contains("on"))closePV();
 if(tab!="home"){go("home");return}if(src=="side"){mn(0);return}
@@ -697,7 +698,7 @@ return`<div class="br" onclick="logoHome('side')" role="button"><img src="${U}">
 +G("g_acc",[it("mon","📅","dp"),it("fin","⚖️","fn"),it("inv","📈","inv"),it("led","📒","ledm"),it("rep","📄","rt"),...((SET.years||[]).length?[it("old","🗃️","oldy")]:[])])
 +G("g_fnd",[it("mem","👥","mem"),it("not","📣","not","not"),it("vote","🗳️","vtm","vote"),it("rules","📜","rl","rules"),...(SET.msgr?[`<button class="it" onclick="openMsgr()"><span class="ii">💬</span><span class="itl">${t("msgr")}</span><em class="ext">↗</em></button>`]:[])])
 +`<div class="gh">${t("g_set")}</div>`+it("help","❓","help")+`<div class="it lng"><span class="ii">🌐</span><span class="itl">${t("lng")}</span><span class="seg2"><button class="${L=="bn"?"on":""}" onclick="setLang('bn')">বাংলা</button><button class="${L=="en"?"on":""}" onclick="setLang('en')">English</button></span></div>`
-+(API_URL&&TOK?it("pw","🔑","pwc")+`<div class="sdiv"></div><button class="it lo" onclick="logout()"><span class="ii">↪️</span><span class="itl">${t("lgt")}</span></button>`:"")+`<div class="vern">${t("ver")} · v${L=="bn"?VER:"57"}</div>`}
++(API_URL&&TOK?it("pw","🔑","pwc")+`<div class="sdiv"></div><button class="it lo" onclick="logout()"><span class="ii">↪️</span><span class="itl">${t("lgt")}</span></button>`:"")+`<div class="vern">${t("ver")} · v${L=="bn"?VER:"58"}</div>`}
 function setLang(l){if(L==l)return;L=l;lss('uif_lang',L);SK='';render()}
 function sideBadges(){const v={cash:pendN(),not:unseenN(),vote:unvN(),rules:unseenR()};document.querySelectorAll("#side .ib2").forEach(e=>{const n=v[e.dataset.b]||0;e.textContent=n?bnD(n):"";e.style.display=n?"":"none"})}
 /* ---------- সাহায্য ---------- */
