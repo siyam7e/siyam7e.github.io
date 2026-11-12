@@ -91,7 +91,7 @@ function roleOf(v) { v = String(v).trim().toLowerCase(); return v === "admin" ? 
 const MOD_ACTIONS = { notice_add: 1, notice_edit: 1, notice_del: 1, poll_add: 1, poll_close: 1, poll_del: 1, info_set: 1, img_add: 1, img_del: 1 };
 function bnNum(n) { return String(n).replace(/\d/g, function (d) { return "\u09e6\u09e7\u09e8\u09e9\u09ea\u09eb\u09ec\u09ed\u09ee\u09ef"[d]; }); }
 function curYear() { return Number(props().getProperty("set_year")) || 2026; }
-function archYears() { return SS.getSheets().map(function (x) { const m = String(x.getName()).match(/^Contributions_(\d{4})$/); return m ? Number(m[1]) : 0; }).filter(Boolean).sort(); }
+function archYears() { const out = [], cy = curYear(); for (let y = 2025; y <= cy + 1; y++) { try { if (SS.getSheetByName("Contributions_" + y)) out.push(y); } catch (e) {} } return out; }
 function settings() { const p = props(); return { est: p.getProperty("set_est") || "\u09e6\u09e8 | \u09e8\u09e6\u09e8\u09eb", slogan: p.getProperty("set_slogan") || "\u0990\u0995\u09cd\u09af \u2022 \u09ac\u09bf\u09a8\u09bf\u09af\u09bc\u09cb\u0997 \u2022 \u0989\u09a8\u09cd\u09a8\u09af\u09bc\u09a8", msgr: p.getProperty("set_msgr") || "", year: curYear(), years: archYears() }; }
 function cashOn() { return props().getProperty("cash_off") !== "1"; }
 function now() { return Utilities.formatDate(new Date(), "Asia/Dhaka", "dd-MM-yyyy HH:mm"); }
