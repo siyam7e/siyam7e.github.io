@@ -36,7 +36,7 @@ function doPost(e) {
       const r = login(q.username, q.password);
       if (r.ok && q.withData) {
         const lu = findUser(r.user.username);
-        if (lu) { r.user.adminSet = !!lu.apw; r.cashOn = cashOn(); r.settings = settings(); r.data = readAll(lu.role === "admin", lu, lu.role === "moderator"); }
+        if (lu) { markOn(lu); r.user.adminSet = !!lu.apw; r.cashOn = cashOn(); r.settings = settings(); r.data = readAll(lu.role === "admin", lu, lu.role === "moderator"); }
       }
       return out(r);
     }
@@ -46,8 +46,11 @@ function doPost(e) {
       return out({ ok: false, auth: false, kicked: !!kicked, error: kicked ? "kicked" : "login_required" });
     }
     if (q.action === "logout") { props().deleteProperty("t_" + q.token); return out({ ok: true }); }
+    if (q.action === "ping") {   // \u0985\u09cd\u09af\u09be\u09aa \u0996\u09cb\u09b2\u09be \u09a5\u09be\u0995\u09b2\u09c7 \u09aa\u09cd\u09b0\u09a4\u09bf \u09ae\u09bf\u09a8\u09bf\u099f\u09c7 \u2013 \u0995\u09c7 \u0985\u09a8\u09b2\u09be\u0987\u09a8\u09c7 \u0986\u099b\u09c7\u09a8
+      markOn(u); touch(u); return out({ ok: true, seen: seenList() });
+    }
     if (q.action === "data") {
-      touch(u);
+      markOn(u); touch(u);
       return out({ ok: true, user: { name: u.name, username: u.username, role: u.role, adminSet: !!u.apw }, cashOn: cashOn(), settings: settings(), data: readAll(u.role === "admin", u, u.role === "moderator") });
     }
     if (q.action === "archive_get") {   // \u09aa\u09c1\u09b0\u09cb\u09a8\u09cb \u09ac\u099b\u09b0\u09c7\u09b0 \u09b9\u09bf\u09b8\u09be\u09ac (\u09b8\u09ac\u09be\u0987 \u09a6\u09c7\u0996\u09a4\u09c7 \u09aa\u09be\u09b0\u09ac\u09c7\u09a8)
@@ -95,11 +98,57 @@ function rows(n) { const s = SS.getSheetByName(n); if (!s) return []; return s.g
 function isOff(v) { return String(v).trim() === "\u09ac\u09a8\u09cd\u09a7"; }
 function roleOf(v) { v = String(v).trim().toLowerCase(); return v === "admin" ? "admin" : v === "cashier" ? "cashier" : v === "moderator" ? "moderator" : "member"; }
 // \u09ae\u09a1\u09be\u09b0\u09c7\u099f\u09b0 \u09af\u09be \u0995\u09b0\u09a4\u09c7 \u09aa\u09be\u09b0\u09ac\u09c7\u09a8
-const MOD_ACTIONS = { notice_add: 1, notice_edit: 1, notice_del: 1, poll_add: 1, poll_close: 1, poll_del: 1, info_set: 1, img_add: 1, img_del: 1 };
+const MOD_ACTIONS = { notice_add: 1, notice_edit: 1, notice_del: 1, poll_add: 1, poll_edit: 1, poll_close: 1, poll_del: 1, info_set: 1, img_add: 1, img_del: 1 };
 function bnNum(n) { return String(n).replace(/\d/g, function (d) { return "\u09e6\u09e7\u09e8\u09e9\u09ea\u09eb\u09ec\u09ed\u09ee\u09ef"[d]; }); }
 function curYear() { return Number(props().getProperty("set_year")) || 2026; }
 function archYears() { const out = [], cy = curYear(); for (let y = 2025; y <= cy + 1; y++) { try { if (SS.getSheetByName("Contributions_" + y)) out.push(y); } catch (e) {} } return out; }
-function settings() { const p = props(); return { est: p.getProperty("set_est") || "\u09e6\u09e8 | \u09e8\u09e6\u09e8\u09eb", slogan: p.getProperty("set_slogan") || "\u0990\u0995\u09cd\u09af \u2022 \u09ac\u09bf\u09a8\u09bf\u09af\u09bc\u09cb\u0997 \u2022 \u0989\u09a8\u09cd\u09a8\u09af\u09bc\u09a8", msgr: p.getProperty("set_msgr") || "", year: curYear(), years: archYears() }; }
+function settings() { const p = props(); return { est: p.getProperty("set_est") || "\u09e6\u09e8 | \u09e8\u09e6\u09e8\u09eb", slogan: p.getProperty("set_slogan") || "\u0990\u0995\u09cd\u09af \u2022 \u09ac\u09bf\u09a8\u09bf\u09af\u09bc\u09cb\u0997 \u2022 \u0989\u09a8\u09cd\u09a8\u09af\u09bc\u09a8", msgr: p.getProperty("set_msgr") || "", year: curYear(), years: archYears(),
+  pay: { num: p.getProperty("pay_num") || "", type: p.getProperty("pay_type") || "", wa: p.getProperty("pay_wa") || "" }, remTpl: p.getProperty("rem_tpl") || "" }; }
+// WhatsApp \u09a8\u09be\u09ae\u09cd\u09ac\u09be\u09b0: + \u09ac\u09be 00 \u09a6\u09bf\u09af\u09bc\u09c7 \u09a6\u09c7\u09b6\u09c7\u09b0 \u0995\u09cb\u09a1\u09b8\u09b9, \u0985\u09a5\u09ac\u09be \u09ac\u09be\u0982\u09b2\u09be\u09a6\u09c7\u09b6\u09bf 01\u2026 / 880\u2026 ; \u09a8\u09be \u09ae\u09bf\u09b2\u09b2\u09c7 null
+function waNorm(s) {
+  s = String(s || "").trim(); if (!s) return ""; let d = s.replace(/\D/g, "");
+  if (s.charAt(0) === "+") return d.length >= 8 && d.length <= 15 ? d : null;
+  if (d.indexOf("00") === 0) { d = d.slice(2); return d.length >= 8 && d.length <= 15 ? d : null; }
+  if (d.indexOf("880") === 0 && d.length === 13) return d;
+  if (d.indexOf("01") === 0 && d.length === 11) return "88" + d;
+  return null;
+}
+// \u0995\u09c7 \u0985\u09a8\u09b2\u09be\u0987\u09a8\u09c7 \u0986\u099b\u09c7\u09a8: [\u09a8\u09be\u09ae, \u09b6\u09c7\u09b7 \u09a6\u09c7\u0996\u09be \u0995\u09a4 \u09b8\u09c7\u0995\u09c7\u09a8\u09cd\u09a1 \u0986\u0997\u09c7 (-1 = \u0995\u0996\u09a8\u09cb \u09a8\u09be), \u098f\u0996\u09a8 \u0985\u09a8\u09b2\u09be\u0987\u09a8 1/0]
+function seenList() {
+  const v = sheet("Users").getDataRange().getValues().slice(1), c = CacheService.getScriptCache(), t = Date.now();
+  let hit = {}; try { hit = c.getAll(v.map(function (r) { return "on_" + String(r[1]).trim().toLowerCase(); })) || {}; } catch (e) {}
+  return v.filter(function (r) { return String(r[0]).trim() && String(r[1]).trim() && !isOff(r[4]); }).map(function (r) {
+    const o = Number(hit["on_" + String(r[1]).trim().toLowerCase()]) || 0;
+    let l = r[5] instanceof Date ? r[5].getTime() : 0;
+    if (!l && r[5]) { const m = String(r[5]).match(/(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})\s+(\d{1,2}):(\d{2})/); if (m) l = Date.UTC(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]) - 6 * 36e5; }
+    const last = Math.max(o, l);
+    return [String(r[0]).trim(), last ? Math.max(0, Math.round((t - last) / 1000)) : -1, o && t - o < 120000 ? 1 : 0];
+  });
+}
+function markOn(u) { try { CacheService.getScriptCache().put("on_" + u.username, String(Date.now()), 150); } catch (e) {} }
+/* ---------- \u09b8\u09be\u09aa\u09cd\u09a4\u09be\u09b9\u09bf\u0995 \u09ac\u09cd\u09af\u09be\u0995\u0986\u09aa (Google Drive-\u098f\u09b0 "UIF Backup" \u09ab\u09cb\u09b2\u09cd\u09a1\u09be\u09b0\u09c7, \u09b6\u09c7\u09b7 \u09ee\u099f\u09bf \u09b0\u09be\u0996\u09be \u09b9\u09af\u09bc) ---------- */
+function bkFolder() {
+  const p = props(); let f = null, id = p.getProperty("bk_folder");
+  if (id) { try { f = DriveApp.getFolderById(id); if (f.isTrashed()) f = null; } catch (e) { f = null; } }
+  if (!f) { const it = DriveApp.getFoldersByName("UIF Backup"); f = it.hasNext() ? it.next() : DriveApp.createFolder("UIF Backup"); p.setProperty("bk_folder", f.getId()); }
+  return f;
+}
+function bkRun() {
+  let f; try { f = bkFolder(); } catch (e) { throw new Error("\u09ac\u09cd\u09af\u09be\u0995\u0986\u09aa\u09c7\u09b0 \u0985\u09a8\u09c1\u09ae\u09a4\u09bf \u098f\u0996\u09a8\u09cb \u09a6\u09c7\u0993\u09af\u09bc\u09be \u09b9\u09af\u09bc\u09a8\u09bf\u0964 Apps Script-\u098f backupSetup \u098f\u0995\u09ac\u09be\u09b0 Run \u0995\u09b0\u09c1\u09a8\u0964"); }
+  DriveApp.getFileById(SS.getId()).makeCopy("UIF \u09ac\u09cd\u09af\u09be\u0995\u0986\u09aa " + Utilities.formatDate(new Date(), "Asia/Dhaka", "dd-MM-yyyy HH-mm"), f);
+  const files = [], it = f.getFiles();
+  while (it.hasNext()) { const x = it.next(); if (String(x.getName()).indexOf("UIF \u09ac\u09cd\u09af\u09be\u0995\u0986\u09aa") === 0) files.push(x); }
+  files.sort(function (a, b) { return b.getDateCreated().getTime() - a.getDateCreated().getTime(); });
+  files.slice(8).forEach(function (x) { x.setTrashed(true); });
+  const p = props(), at = now(); p.setProperty("bk_last", at); p.setProperty("bk_url", f.getUrl()); p.setProperty("bk_n", String(Math.min(files.length, 8)));
+  return { last: at, url: f.getUrl() };
+}
+function bkSetup() {   // main \u09ab\u09be\u0987\u09b2\u09c7\u09b0 backupSetup \u09a5\u09c7\u0995\u09c7 \u098f\u0995\u09ac\u09be\u09b0 \u099a\u09be\u09b2\u09be\u09a4\u09c7 \u09b9\u09af\u09bc
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === "weeklyBackup") ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger("weeklyBackup").timeBased().onWeekDay(ScriptApp.WeekDay.FRIDAY).atHour(23).inTimezone("Asia/Dhaka").create();
+  props().setProperty("bk_auto", "1");
+  const r = bkRun(); Logger.log("\u2705 \u09b8\u09be\u09aa\u09cd\u09a4\u09be\u09b9\u09bf\u0995 \u09ac\u09cd\u09af\u09be\u0995\u0986\u09aa \u099a\u09be\u09b2\u09c1 \u09b9\u09af\u09bc\u09c7\u099b\u09c7 (\u09aa\u09cd\u09b0\u09a4\u09bf \u09b6\u09c1\u0995\u09cd\u09b0\u09ac\u09be\u09b0 \u09b0\u09be\u09a4 \u09e7\u09e7\u099f\u09be, \u09ac\u09be\u0982\u09b2\u09be\u09a6\u09c7\u09b6 \u09b8\u09ae\u09af\u09bc)\u0964 \u09ab\u09cb\u09b2\u09cd\u09a1\u09be\u09b0: " + r.url); return r;
+}
 function cashOn() { return props().getProperty("cash_off") !== "1"; }
 function now() { return Utilities.formatDate(new Date(), "Asia/Dhaka", "dd-MM-yyyy HH:mm"); }
 function monthLabel(m) { m = Number(m); return m >= 0 && m < 12 ? MONTHS[m] : "\u09aa\u09c1\u09b0\u09cb\u09a8\u09cb"; }
@@ -153,9 +202,9 @@ function auth(token) {
   return u;
 }
 
-function touch(u) {   // \u09b6\u09c7\u09b7 \u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0 \u09b8\u09ae\u09af\u09bc (\u09e7\u09e6 \u09ae\u09bf\u09a8\u09bf\u099f\u09c7 \u098f\u0995\u09ac\u09be\u09b0 \u09b2\u09c7\u0996\u09be \u09b9\u09af\u09bc)
+function touch(u) {   // \u09b6\u09c7\u09b7 \u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0 \u09b8\u09ae\u09af\u09bc (\u09eb \u09ae\u09bf\u09a8\u09bf\u099f\u09c7 \u098f\u0995\u09ac\u09be\u09b0 \u09b2\u09c7\u0996\u09be \u09b9\u09af\u09bc)
   const last = u.last instanceof Date ? u.last.getTime() : 0;
-  if (Date.now() - last > 600000) u.sh.getRange(u.row, 6).setValue(new Date());
+  if (Date.now() - last > 300000) u.sh.getRange(u.row, 6).setValue(new Date());
 }
 
 function dropTokens(username, kicked) {
@@ -195,6 +244,9 @@ function readAll(isAdmin, u, isMod) {
   // \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8 \u0993 \u0995\u09cd\u09af\u09be\u09b6\u09bf\u09af\u09bc\u09be\u09b0\u09c7\u09b0 \u09a8\u09be\u09ae (\u09a8\u09be\u09ae\u09c7\u09b0 \u09aa\u09be\u09b6\u09c7 \u099a\u09bf\u09b9\u09cd\u09a8\u09c7\u09b0 \u099c\u09a8\u09cd\u09af) \u2013 \u0985\u09a8\u09cd\u09af \u0995\u09cb\u09a8\u09cb \u09a4\u09a5\u09cd\u09af \u09a8\u09af\u09bc
   d.Roles = rows("Users").filter(function (r) { const x = roleOf(r[3]); return x !== "member"; }).map(function (r) { return [String(r[0]).trim(), roleOf(r[3])]; });
   if (isAdmin || isMod) d.Votes = vs.map(function (r) { return [r[0], r[2], r[3], r[4]]; });
+  d.Seen = seenList();
+  if (isAdmin || (u && u.role === "cashier")) { try { d.RemSent = JSON.parse(props().getProperty("rem_log") || "{}") || {}; } catch (e) { d.RemSent = {}; } }
+  if (isAdmin) { const p = props(); d.Backup = { last: p.getProperty("bk_last") || "", url: p.getProperty("bk_url") || "", auto: p.getProperty("bk_auto") === "1", n: Number(p.getProperty("bk_n") || 0) }; }
   if (isAdmin) d.Users = rows("Users").map(function (r) { return [r[0], r[1], r[3], r[4], r[5], r[6] || ""]; }); // \u09b8\u0982\u0995\u09c7\u09a4\u09be\u09af\u09bc\u09bf\u09a4 \u09aa\u09be\u09b8\u0993\u09af\u09bc\u09be\u09b0\u09cd\u09a1 \u0995\u0996\u09a8\u09cb \u09aa\u09be\u09a0\u09be\u09a8\u09cb \u09b9\u09af\u09bc \u09a8\u09be; \u09b6\u09c1\u09a7\u09c1 \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8\u09c7\u09b0 \u09a6\u09c7\u0993\u09af\u09bc\u09be \u09aa\u09be\u09b8\u0993\u09af\u09bc\u09be\u09b0\u09cd\u09a1 (G)
   return d;
 }
@@ -314,6 +366,12 @@ function adminAction(q, u) {
       }
       return {};
     }
+    case "rem_tpl": {   // WhatsApp \u09b0\u09bf\u09ae\u09be\u0987\u09a8\u09cd\u09a1\u09be\u09b0\u09c7\u09b0 \u09ac\u09be\u09b0\u09cd\u09a4\u09be (\u0996\u09be\u09b2\u09bf \u09a6\u09bf\u09b2\u09c7 \u0986\u0997\u09c7\u09b0 \u09b2\u09c7\u0996\u09be\u09af\u09bc \u09ab\u09c7\u09b0\u09a4)
+      const s = String(q.tpl || "").replace(/\r/g, "").trim().slice(0, 1200);
+      if (!s) props().deleteProperty("rem_tpl"); else props().setProperty("rem_tpl", s);
+      return {};
+    }
+    case "backup_now": return bkRun();
     /* ----- \u09a8\u09a4\u09c1\u09a8 \u09ac\u099b\u09b0 \u09b6\u09c1\u09b0\u09c1 ----- */
     case "year_close": {
       const y = curYear();
@@ -396,6 +454,31 @@ function adminAction(q, u) {
       sh.getRange(r, 1, 1, 8).setNumberFormat("@");
       sh.getRange(r, 1, 1, 8).setValues([[id, qq, opts.slice(0, 8).join("|"), rule, end, "\u099a\u09be\u09b2\u09c1", now(), String(q.desc || "").slice(0, 300)]]);
       return { id: id };
+    }
+    case "poll_edit": {   // \u09ad\u09cb\u099f\u09c7\u09b0 \u09b8\u09ac\u0995\u09bf\u099b\u09c1 \u09af\u09c7\u0995\u09cb\u09a8\u09cb \u09b8\u09ae\u09af\u09bc \u09ac\u09a6\u09b2\u09be\u09a8\u09cb \u09af\u09be\u09af\u09bc; \u09ad\u09cb\u099f \u0985\u09aa\u09b6\u09a8\u09c7\u09b0 \u09b8\u09be\u09a5\u09c7 \u09a5\u09be\u0995\u09c7, \u09ac\u09be\u09a6 \u09a6\u09c7\u0993\u09af\u09bc\u09be \u0985\u09aa\u09b6\u09a8\u09c7\u09b0 \u09ad\u09cb\u099f \u09ac\u09be\u09a4\u09bf\u09b2 \u09b9\u09af\u09bc
+      const sh = sheet("Polls"), p = findById(sh, q.id);
+      const qq = String(q.question || "").trim(); if (!qq) throw new Error("\u09aa\u09cd\u09b0\u09b6\u09cd\u09a8 \u09b2\u09bf\u0996\u09c1\u09a8");
+      const opts = (q.options || []).map(function (x) { return String(x).replace(/\|/g, "/").trim(); }).filter(Boolean).slice(0, 8);
+      if (opts.length < 2) throw new Error("\u0995\u09ae\u09aa\u0995\u09cd\u09b7\u09c7 \u09e8\u099f\u09bf \u0985\u09aa\u09b6\u09a8 \u09a6\u09bf\u09a8");
+      const rule = Number(q.rule) === 75 ? "75" : "50", end = String(q.end || "").trim();
+      if (end && !/^\d{1,2}-\d{1,2}-\d{4}$/.test(end)) throw new Error("\u09b6\u09c7\u09b7 \u09a4\u09be\u09b0\u09bf\u0996 \u09a6\u09bf\u09a8-\u09ae\u09be\u09b8-\u09ac\u099b\u09b0 \u0986\u0995\u09be\u09b0\u09c7 \u09b2\u09bf\u0996\u09c1\u09a8");
+      const old = String(p.r[2]).split("|");
+      let map = Array.isArray(q.map) ? q.map.slice(0, opts.length).map(Number) : opts.map(function (_, i) { return i < old.length ? i : -1; });
+      while (map.length < opts.length) map.push(-1);
+      const vs = SS.getSheetByName("Votes");
+      if (vs && vs.getLastRow() > 1) {
+        const v = vs.getRange(2, 1, vs.getLastRow() - 1, 4).getDisplayValues();
+        for (let i = v.length - 1; i >= 0; i--) {
+          if (String(v[i][0]) !== String(q.id)) continue;
+          const oc = Number(v[i][3]), ni = map.indexOf(oc);
+          if (ni < 0) vs.deleteRow(i + 2);
+          else if (ni !== oc) { const c = vs.getRange(i + 2, 4); c.setNumberFormat("@"); c.setValue(String(ni)); }
+        }
+      }
+      const a = sh.getRange(p.row, 2, 1, 4); a.setNumberFormat("@"); a.setValues([[qq, opts.join("|"), rule, end]]);
+      const b = sh.getRange(p.row, 8, 1, 2); b.setNumberFormat("@"); b.setValues([[String(q.desc || "").slice(0, 300), now()]]);
+      if (!String(sh.getRange(1, 9, 1, 1).getDisplayValues()[0][0] || "")) sh.getRange(1, 9, 1, 1).setValues([["\u09b8\u09ae\u09cd\u09aa\u09be\u09a6\u09bf\u09a4"]]);
+      return {};
     }
     case "poll_close": { const sh = sheet("Polls"), p = findById(sh, q.id); sh.getRange(p.row, 6).setValue(q.open ? "\u099a\u09be\u09b2\u09c1" : "\u09ac\u09a8\u09cd\u09a7"); return {}; }
     case "poll_del": {
@@ -608,16 +691,19 @@ function payAction(q, u) {
   const sh = paySheet();
   switch (q.action) {
     case "pay_add": {      // \u09b8\u09a6\u09b8\u09cd\u09af \u09a8\u09bf\u099c\u09c7 \u09ac\u09bf\u0995\u09be\u09b6/\u09a8\u0997\u09a6/\u09b0\u0995\u09c7\u099f\u09c7\u09b0 \u09a4\u09a5\u09cd\u09af \u09a6\u09c7\u09ac\u09c7
-      const last4 = String(q.last4 || "").replace(/\D/g, "");
-      if (last4.length !== 4) throw new Error("\u09a8\u09be\u09ae\u09cd\u09ac\u09be\u09b0\u09c7\u09b0 \u09b6\u09c7\u09b7 \u09ea \u09b8\u0982\u0996\u09cd\u09af\u09be \u09b2\u09bf\u0996\u09c1\u09a8");
+      const isCash = String(q.method || "").trim() === "\u0995\u09cd\u09af\u09be\u09b6";
+      const last4 = isCash ? "" : String(q.last4 || "").replace(/\D/g, "");
+      if (!isCash && last4.length !== 4) throw new Error("\u09a8\u09be\u09ae\u09cd\u09ac\u09be\u09b0\u09c7\u09b0 \u09b6\u09c7\u09b7 \u09ea \u09b8\u0982\u0996\u09cd\u09af\u09be \u09b2\u09bf\u0996\u09c1\u09a8");
       const amt = Math.round(Number(q.amount) || 0); if (amt <= 0) throw new Error("\u099f\u09be\u0995\u09be\u09b0 \u09aa\u09b0\u09bf\u09ae\u09be\u09a3 \u09b2\u09bf\u0996\u09c1\u09a8");
       const date = String(q.date || "").trim(); if (!date) throw new Error("\u09a4\u09be\u09b0\u09bf\u0996 \u09a6\u09bf\u09a8");
       if (!memberExists(u.name)) throw new Error("\u0986\u09aa\u09a8\u09be\u09b0 \u09a8\u09be\u09ae \u099a\u09be\u0981\u09a6\u09be\u09b0 \u09a4\u09be\u09b2\u09bf\u0995\u09be\u09af\u09bc \u09aa\u09be\u0993\u09af\u09bc\u09be \u09af\u09be\u09af\u09bc\u09a8\u09bf, \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8\u0995\u09c7 \u099c\u09be\u09a8\u09be\u09a8");
+      let meth = String(q.method || "").trim().slice(0, 30); if (!meth) meth = "MFS";
+      if (/[=+@\-]/.test(meth.charAt(0))) meth = "'" + meth;
       const tg = payTarget(q);
       if (tg.type === "\u099c\u09b0\u09bf\u09ae\u09be\u09a8\u09be") checkFine(u.name, tg.mon, amt);
       const id = newPayId(sh), r = sh.getLastRow() + 1;
       sh.getRange(r, 1, 1, PAY_HEAD.length).setNumberFormat("@");
-      sh.getRange(r, 1, 1, PAY_HEAD.length).setValues([payRow(id, u.name, last4, amt, date, tg.type, tg.mon, "MFS", ST.p, "")]);
+      sh.getRange(r, 1, 1, PAY_HEAD.length).setValues([payRow(id, u.name, last4, amt, date, tg.type, tg.mon, meth, ST.p, "")]);
       return { id: id };
     }
     case "pay_cash": {     // \u0995\u09cd\u09af\u09be\u09b6 \u099c\u09ae\u09be \u2013 \u09b6\u09c1\u09a7\u09c1 \u0995\u09cd\u09af\u09be\u09b6\u09bf\u09af\u09bc\u09be\u09b0 \u0993 \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8, \u09b8\u09b0\u09be\u09b8\u09b0\u09bf "\u099c\u09ae\u09be \u09b9\u09af\u09bc\u09c7\u099b\u09c7"
@@ -633,6 +719,23 @@ function payAction(q, u) {
       sh.getRange(r, 1, 1, PAY_HEAD.length).setValues([row]);
       applyPay(row, 1);
       return { id: id };
+    }
+    case "pay_info": {     // \u0995\u09cd\u09af\u09be\u09b6\u09bf\u09af\u09bc\u09be\u09b0/\u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8: \u099f\u09be\u0995\u09be \u09aa\u09be\u09a0\u09be\u09a8\u09cb\u09b0 \u09a8\u09be\u09ae\u09cd\u09ac\u09be\u09b0, \u09a7\u09b0\u09a8 \u0993 WhatsApp
+      if (!staff) throw new Error("\u09b6\u09c1\u09a7\u09c1 \u0995\u09cd\u09af\u09be\u09b6\u09bf\u09af\u09bc\u09be\u09b0 \u09ac\u09be \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8");
+      const ty = String(q.type || ""); if (["bk", "ng", "both"].indexOf(ty) < 0) throw new Error("\u09a8\u09be\u09ae\u09cd\u09ac\u09be\u09b0\u09c7\u09b0 \u09a7\u09b0\u09a8 \u09ac\u09be\u099b\u09be\u0987 \u0995\u09b0\u09c1\u09a8");
+      let n = String(q.num || "").replace(/\D/g, ""); if (n.indexOf("880") === 0) n = n.slice(2);
+      if (!/^01\d{9}$/.test(n)) throw new Error("\u09b8\u09a0\u09bf\u0995 \u09ac\u09bf\u0995\u09be\u09b6/\u09a8\u0997\u09a6 \u09a8\u09be\u09ae\u09cd\u09ac\u09be\u09b0 \u09a6\u09bf\u09a8 (\u09e6\u09e7 \u09a6\u09bf\u09af\u09bc\u09c7 \u09b6\u09c1\u09b0\u09c1, \u09e7\u09e7 \u09b8\u0982\u0996\u09cd\u09af\u09be)");
+      const wr = String(q.wa || "").trim(), wa = wr ? waNorm(wr) : "";
+      if (wr && !wa) throw new Error("WhatsApp \u09a8\u09be\u09ae\u09cd\u09ac\u09be\u09b0\u09c7 \u09a6\u09c7\u09b6\u09c7\u09b0 \u0995\u09cb\u09a1 \u09a6\u09bf\u09a8, \u09af\u09c7\u09ae\u09a8: +966 55 123 4567");
+      const p = props(); p.setProperty("pay_num", n); p.setProperty("pay_type", ty);
+      if (wa) p.setProperty("pay_wa", "+" + wa); else p.deleteProperty("pay_wa");
+      return {};
+    }
+    case "pay_rem": {      // \u0995\u09cd\u09af\u09be\u09b6\u09bf\u09af\u09bc\u09be\u09b0/\u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8: \u0995\u09be\u0995\u09c7 WhatsApp \u09b0\u09bf\u09ae\u09be\u0987\u09a8\u09cd\u09a1\u09be\u09b0 \u09aa\u09be\u09a0\u09be\u09a8\u09cb \u09b9\u09b2\u09cb
+      if (!staff) throw new Error("\u09b6\u09c1\u09a7\u09c1 \u0995\u09cd\u09af\u09be\u09b6\u09bf\u09af\u09bc\u09be\u09b0 \u09ac\u09be \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8");
+      const nm = String(q.name || "").trim(); if (!memberExists(nm)) throw new Error("\u09b8\u09a6\u09b8\u09cd\u09af \u09aa\u09be\u0993\u09af\u09bc\u09be \u09af\u09be\u09af\u09bc\u09a8\u09bf");
+      const p = props(); let m = {}; try { m = JSON.parse(p.getProperty("rem_log") || "{}") || {}; } catch (e) {}
+      m[nm] = Date.now(); p.setProperty("rem_log", JSON.stringify(m)); return { at: m[nm] };
     }
     case "pay_cancel": {   // \u09b8\u09a6\u09b8\u09cd\u09af \u09a8\u09bf\u099c\u09c7\u09b0 \u09aa\u09c7\u09a8\u09cd\u09a1\u09bf\u0982 \u09b0\u09bf\u0995\u09cb\u09af\u09bc\u09c7\u09b8\u09cd\u099f \u09ac\u09be\u09a4\u09bf\u09b2 \u0995\u09b0\u09ac\u09c7
       const p = findPay(sh, q.id);
@@ -664,5 +767,9 @@ function payAction(q, u) {
   throw new Error("\u0985\u099c\u09be\u09a8\u09be \u0995\u09be\u099c: " + q.action);
 }
 
-/** Apps Script \u098f\u09a1\u09bf\u099f\u09b0\u09c7 \u098f\u0995\u09ac\u09be\u09b0 \u098f\u099f\u09bf Run \u0995\u09b0\u09c1\u09a8 \u2013 \u0985\u09a8\u09c1\u09ae\u09a4\u09bf \u09a6\u09c7\u0993\u09af\u09bc\u09be\u09b0 \u099c\u09a8\u09cd\u09af */
+/** Apps Script \u098f\u09a1\u09bf\u099f\u09b0\u09c7 \u098f\u0995\u09ac\u09be\u09b0 \u098f\u099f\u09bf Run \u0995\u09b0\u09c1\u09a8 \u2013 \u0985\u09a8\u09c1\u09ae\u09a4\u09bf \u09a6\u09c7\u0993\u09af\u09bc\u09be\u09b0 \u099c\u09a8\u09cd\u09af
+ *  \u09b8\u09be\u09aa\u09cd\u09a4\u09be\u09b9\u09bf\u0995 \u09ac\u09cd\u09af\u09be\u0995\u0986\u09aa \u099a\u09be\u09b2\u09c1 \u0995\u09b0\u09a4\u09c7 main \u09ab\u09be\u0987\u09b2\u09c7 \u098f\u0987 \u09a6\u09c1\u099f\u09bf \u09b2\u09be\u0987\u09a8 \u09a5\u09be\u0995\u09a4\u09c7 \u09b9\u09ac\u09c7:
+ *  function backupSetup() { DriveApp.getRootFolder(); ScriptApp.getProjectTriggers(); bkSetup(); }
+ *  function weeklyBackup() { bkRun(); }
+ */
 function setup() { Logger.log("\u09a0\u09bf\u0995 \u0986\u099b\u09c7: " + SS.getName() + " \u2013 Users \u09b6\u09bf\u099f: " + (SS.getSheetByName("Users") ? "\u0986\u099b\u09c7" : "\u09a8\u09c7\u0987")); }
