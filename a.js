@@ -45,7 +45,8 @@ function doPost(e) {
       const kicked = q.token && CacheService.getScriptCache().get("k_" + q.token);
       return out({ ok: false, auth: false, kicked: !!kicked, error: kicked ? "kicked" : "login_required" });
     }
-    if (q.action === "logout") { props().deleteProperty("t_" + q.token); return out({ ok: true }); }
+    if (q.action === "logout") { props().deleteProperty("t_" + q.token); if (q.ptk) pushDel(String(q.ptk)); return out({ ok: true }); }
+    if (q.action === "push_reg" || q.action === "push_unreg" || q.action === "push_pref" || q.action === "push_test") return out(pushUser(u, q));
     if (q.action === "ping") {   // \u0985\u09cd\u09af\u09be\u09aa \u0996\u09cb\u09b2\u09be \u09a5\u09be\u0995\u09b2\u09c7 \u09aa\u09cd\u09b0\u09a4\u09bf \u09ae\u09bf\u09a8\u09bf\u099f\u09c7 \u2013 \u0995\u09c7 \u0985\u09a8\u09b2\u09be\u0987\u09a8\u09c7 \u0986\u099b\u09c7\u09a8
       markOn(u); touch(u); return out({ ok: true, seen: seenList() });
     }
@@ -73,14 +74,16 @@ function doPost(e) {
       const r = passChange(u, q); logAct(u, { action: "pass_change" }); return out(Object.assign({ ok: true }, r));
     }
     if (!isPay && u.role !== "admin" && !(u.role === "moderator" && MOD_ACTIONS[q.action])) return out({ ok: false, error: "admin_only" });
-    const lock = LockService.getScriptLock();
+    let lock = LockService.getScriptLock();
     lock.waitLock(20000);
     try {
       const r = isPay ? payAction(q, u) : adminAction(q, u);
       logAct(u, q);
       SpreadsheetApp.flush(); dropRS();
-      return out(Object.assign({ ok: true }, r || {}));
-    } finally { lock.releaseLock(); }
+      lock.releaseLock(); lock = null;
+      const pr = pushFlush();
+      return out(Object.assign({ ok: true }, r || {}, pr ? { push: pr } : {}));
+    } finally { if (lock) lock.releaseLock(); }
   } catch (err) {
     return out({ ok: false, error: String((err && err.message) || err) });
   }
@@ -103,7 +106,8 @@ function bnNum(n) { return String(n).replace(/\d/g, function (d) { return "\u09e
 function curYear() { return Number(props().getProperty("set_year")) || 2026; }
 function archYears() { const out = [], cy = curYear(); for (let y = 2025; y <= cy + 1; y++) { try { if (SS.getSheetByName("Contributions_" + y)) out.push(y); } catch (e) {} } return out; }
 function settings() { const p = props(); return { est: p.getProperty("set_est") || "\u09e6\u09e8 | \u09e8\u09e6\u09e8\u09eb", slogan: p.getProperty("set_slogan") || "\u0990\u0995\u09cd\u09af \u2022 \u09ac\u09bf\u09a8\u09bf\u09af\u09bc\u09cb\u0997 \u2022 \u0989\u09a8\u09cd\u09a8\u09af\u09bc\u09a8", msgr: p.getProperty("set_msgr") || "", year: curYear(), years: archYears(),
-  pay: { num: p.getProperty("pay_num") || "", type: p.getProperty("pay_type") || "", wa: p.getProperty("pay_wa") || "" }, remTpl: p.getProperty("rem_tpl") || "" }; }
+  pay: { num: p.getProperty("pay_num") || "", type: p.getProperty("pay_type") || "", wa: p.getProperty("pay_wa") || "" }, remTpl: p.getProperty("rem_tpl") || "",
+  fcm: p.getProperty("fcm_cfg") && p.getProperty("fcm_sa") ? { cfg: JSON.parse(p.getProperty("fcm_cfg")), vapid: p.getProperty("fcm_vapid") || "" } : null }; }
 // WhatsApp \u09a8\u09be\u09ae\u09cd\u09ac\u09be\u09b0: + \u09ac\u09be 00 \u09a6\u09bf\u09af\u09bc\u09c7 \u09a6\u09c7\u09b6\u09c7\u09b0 \u0995\u09cb\u09a1\u09b8\u09b9, \u0985\u09a5\u09ac\u09be \u09ac\u09be\u0982\u09b2\u09be\u09a6\u09c7\u09b6\u09bf 01\u2026 / 880\u2026 ; \u09a8\u09be \u09ae\u09bf\u09b2\u09b2\u09c7 null
 function waNorm(s) {
   s = String(s || "").trim(); if (!s) return ""; let d = s.replace(/\D/g, "");
@@ -126,6 +130,107 @@ function seenList() {
   });
 }
 function markOn(u) { try { CacheService.getScriptCache().put("on_" + u.username, String(Date.now()), 150); } catch (e) {} }
+/* ---------- \u09ab\u09cb\u09a8\u09c7 \u09a8\u09cb\u099f\u09bf\u09ab\u09bf\u0995\u09c7\u09b6\u09a8 (Firebase Cloud Messaging) ---------- */
+// Push \u09b6\u09bf\u099f: A \u0987\u0989\u099c\u09be\u09b0\u09a8\u09c7\u09ae | B \u099f\u09cb\u0995\u09c7\u09a8 | C \u09a1\u09bf\u09ad\u09be\u0987\u09b8 | D \u09b8\u09ae\u09af\u09bc   \u2014 \u09aa\u09cd\u09b0\u09a4\u09bf \u09b8\u09a6\u09b8\u09cd\u09af\u09c7\u09b0 \u09b8\u09b0\u09cd\u09ac\u09cb\u099a\u09cd\u099a \u09eb\u099f\u09bf \u09a1\u09bf\u09ad\u09be\u0987\u09b8
+const MONTHS_F = ["\u099c\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b0\u09bf","\u09ab\u09c7\u09ac\u09cd\u09b0\u09c1\u09af\u09bc\u09be\u09b0\u09bf","\u09ae\u09be\u09b0\u09cd\u099a","\u098f\u09aa\u09cd\u09b0\u09bf\u09b2","\u09ae\u09c7","\u099c\u09c1\u09a8","\u099c\u09c1\u09b2\u09be\u0987","\u0986\u0997\u09b8\u09cd\u099f","\u09b8\u09c7\u09aa\u09cd\u099f\u09c7\u09ae\u09cd\u09ac\u09b0","\u0985\u0995\u09cd\u099f\u09cb\u09ac\u09b0","\u09a8\u09ad\u09c7\u09ae\u09cd\u09ac\u09b0","\u09a1\u09bf\u09b8\u09c7\u09ae\u09cd\u09ac\u09b0"];
+const PUSH_KEYS = { not: 1, vote: 1, rule: 1, due: 1, msg: 1, req: 1 };
+let PQ = [];
+function tk(n) { return bnNum(Math.round(Number(n) || 0).toLocaleString("en-IN")) + " \u09f3"; }
+function payWhat(tg) { const i = MONTHS.indexOf(String(tg.mon).trim()), m = i >= 0 ? MONTHS_F[i] : "\u0986\u0997\u09c7\u09b0"; return String(tg.type) === "\u099c\u09b0\u09bf\u09ae\u09be\u09a8\u09be" ? m + " \u09ae\u09be\u09b8\u09c7\u09b0 \u099c\u09b0\u09bf\u09ae\u09be\u09a8\u09be" : m + " \u09ae\u09be\u09b8\u09c7\u09b0 \u099a\u09be\u0981\u09a6\u09be"; }
+function usersAll() { return sheet("Users").getDataRange().getValues().slice(1).filter(function (r) { return String(r[1]).trim() && !isOff(r[4]); }); }
+function allUsers() { return usersAll().map(function (r) { return String(r[1]).trim().toLowerCase(); }); }
+function unOf(names) { const s = {}; names.forEach(function (n) { s[String(n).trim()] = 1; }); return usersAll().filter(function (r) { return s[String(r[0]).trim()]; }).map(function (r) { return String(r[1]).trim().toLowerCase(); }); }
+function staffUsers() { const co = cashOn(); return usersAll().filter(function (r) { const x = roleOf(r[3]); return x === "admin" || (x === "cashier" && co); }).map(function (r) { return String(r[1]).trim().toLowerCase(); }); }
+function pushQ(users, msg, except, force) { if (!users || !users.length) return; PQ.push({ users: users.filter(function (x) { return x !== except; }), msg: msg, force: !!force }); }
+function pushSheet() { return mkSheet("Push", ["\u0987\u0989\u099c\u09be\u09b0\u09a8\u09c7\u09ae", "\u099f\u09cb\u0995\u09c7\u09a8", "\u09a1\u09bf\u09ad\u09be\u0987\u09b8", "\u09b8\u09ae\u09af\u09bc"]); }
+function pushDel(tok) { const sh = SS.getSheetByName("Push"); if (!sh || sh.getLastRow() < 2) return; const v = sh.getRange(2, 2, sh.getLastRow() - 1, 1).getDisplayValues(); for (let i = v.length - 1; i >= 0; i--) if (v[i][0] === tok) sh.deleteRow(i + 2); }
+function fcmAuth(sa) {
+  const c = CacheService.getScriptCache(), hit = c.get("fcm_at"); if (hit) return hit;
+  const b64 = function (x) { return Utilities.base64EncodeWebSafe(x).replace(/=+$/, ""); }, t = Math.floor(Date.now() / 1000);
+  const inp = b64(JSON.stringify({ alg: "RS256", typ: "JWT" })) + "." + b64(JSON.stringify({ iss: sa.client_email, scope: "https://www.googleapis.com/auth/firebase.messaging", aud: "https://oauth2.googleapis.com/token", iat: t, exp: t + 3600 }));
+  let sig; try { sig = b64(Utilities.computeRsaSha256Signature(inp, sa.private_key)); } catch (e) { throw new Error("Service account-\u098f\u09b0 private key \u0995\u09be\u099c \u0995\u09b0\u099b\u09c7 \u09a8\u09be"); }
+  const r = UrlFetchApp.fetch("https://oauth2.googleapis.com/token", { method: "post", payload: { grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: inp + "." + sig }, muteHttpExceptions: true });
+  let j = {}; try { j = JSON.parse(r.getContentText()); } catch (e) {}
+  if (!j.access_token) throw new Error("Firebase-\u098f \u09a2\u09cb\u0995\u09be \u09af\u09be\u09af\u09bc\u09a8\u09bf: " + (j.error_description || j.error || r.getResponseCode()));
+  c.put("fcm_at", j.access_token, 3000); return j.access_token;
+}
+function pushSend(list) {   // list: [{users, msg, force}] \u2192 \u09aa\u09be\u09a0\u09be\u09a8\u09cb \u09a1\u09bf\u09ad\u09be\u0987\u09b8\u09c7\u09b0 \u09b8\u0982\u0996\u09cd\u09af\u09be
+  const p = props(), saS = p.getProperty("fcm_sa"); if (!saS || !p.getProperty("fcm_cfg")) return null;
+  const sa = JSON.parse(saS), sh = SS.getSheetByName("Push"); if (!sh || sh.getLastRow() < 2) return { n: 0, p: 0 };
+  const rowsP = sh.getRange(2, 1, sh.getLastRow() - 1, 2).getDisplayValues(), pref = {}, reqs = [], meta = [];
+  const pf = function (un) { if (!(un in pref)) { try { pref[un] = JSON.parse(p.getProperty("npf_" + un) || "{}") || {}; } catch (e) { pref[un] = {}; } } return pref[un]; };
+  const at = fcmAuth(sa), url = "https://fcm.googleapis.com/v1/projects/" + sa.project_id + "/messages:send", ppl = {};
+  list.forEach(function (it) {
+    const want = {}; it.users.forEach(function (x) { if (it.force || PUSH_KEYS[it.msg.k] !== 1 || pf(x)[it.msg.k] !== 0) want[x] = 1; });
+    rowsP.forEach(function (r, i) { if (!want[String(r[0])]) return; ppl[r[0]] = 1;
+      reqs.push({ url: url, method: "post", contentType: "application/json", headers: { Authorization: "Bearer " + at }, muteHttpExceptions: true,
+        payload: JSON.stringify({ message: { token: r[1], data: { title: String(it.msg.t), body: String(it.msg.b), url: String(it.msg.u || "home"), tag: String(it.msg.k || "uif") }, webpush: { headers: { Urgency: "high", TTL: "86400" } } } }) });
+      meta.push(r[1]); });
+  });
+  if (!reqs.length) return { n: 0, p: 0 };
+  let sent = 0; const bad = [];
+  for (let i = 0; i < reqs.length; i += 50) {
+    UrlFetchApp.fetchAll(reqs.slice(i, i + 50)).forEach(function (res, j) { const c = res.getResponseCode(); if (c === 200) sent++; else if (c === 404 || /UNREGISTERED|registration-token-not-registered|INVALID_ARGUMENT/.test(res.getContentText())) bad.push(meta[i + j]); });
+  }
+  bad.forEach(pushDel);
+  return { n: sent, p: Object.keys(ppl).length };
+}
+function pushFlush() { if (!PQ.length) return null; const l = PQ; PQ = []; try { const r = pushSend(l); if (!r) return null; r.t = l[0].msg.t; r.b = l[0].msg.b; return r; } catch (e) { return { n: 0, p: 0, err: String(e.message || e) }; } }
+function pushUser(u, q) {
+  const p = props();
+  if (q.action === "push_pref") { const o = {}; Object.keys(PUSH_KEYS).forEach(function (k) { if (q.prefs && q.prefs[k] === 0) o[k] = 0; }); p.setProperty("npf_" + u.username, JSON.stringify(o)); return { ok: true }; }
+  const tok = String(q.ptk || "").trim(); if (!/^[\w:.-]{20,400}$/.test(tok)) return { ok: false, error: "\u099f\u09cb\u0995\u09c7\u09a8 \u09b8\u09a0\u09bf\u0995 \u09a8\u09af\u09bc" };
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    if (q.action === "push_unreg") { pushDel(tok); return { ok: true }; }
+    if (q.action === "push_reg") {
+      pushDel(tok); const sh = pushSheet(), r = sh.getLastRow() + 1;
+      sh.getRange(r, 1, 1, 4).setNumberFormat("@"); sh.getRange(r, 1, 1, 4).setValues([[u.username, tok, String(q.dev || "").slice(0, 60), now()]]);
+      const v = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getDisplayValues(), mine = [];
+      v.forEach(function (x, i) { if (x[0] === u.username) mine.push(i + 2); });
+      mine.slice(0, Math.max(0, mine.length - 5)).reverse().forEach(function (rr) { sh.deleteRow(rr); });
+      return { ok: true };
+    }
+  } finally { lock.releaseLock(); }
+  // push_test \u2013 \u09b6\u09c1\u09a7\u09c1 \u098f\u0987 \u09a1\u09bf\u09ad\u09be\u0987\u09b8\u09c7
+  const sa = p.getProperty("fcm_sa"); if (!sa) return { ok: false, error: "\u098f\u09a1\u09ae\u09bf\u09a8 \u098f\u0996\u09a8\u09cb \u09a8\u09cb\u099f\u09bf\u09ab\u09bf\u0995\u09c7\u09b6\u09a8 \u09b8\u09c7\u099f\u0986\u09aa \u0995\u09b0\u09c7\u09a8\u09a8\u09bf" };
+  const s = JSON.parse(sa), at = fcmAuth(s);
+  const res = UrlFetchApp.fetch("https://fcm.googleapis.com/v1/projects/" + s.project_id + "/messages:send", { method: "post", contentType: "application/json", headers: { Authorization: "Bearer " + at }, muteHttpExceptions: true,
+    payload: JSON.stringify({ message: { token: tok, data: { title: "\ud83d\udd14 \u09aa\u09b0\u09c0\u0995\u09cd\u09b7\u09be\u09ae\u09c2\u09b2\u0995 \u09a8\u09cb\u099f\u09bf\u09ab\u09bf\u0995\u09c7\u09b6\u09a8", body: "\u099a\u09ae\u09ce\u0995\u09be\u09b0! " + u.name + ", \u098f\u0987 \u09ab\u09cb\u09a8\u09c7 \u09a8\u09cb\u099f\u09bf\u09ab\u09bf\u0995\u09c7\u09b6\u09a8 \u09a0\u09bf\u0995\u09ae\u09a4\u09cb \u0986\u09b8\u099b\u09c7 \u2705", url: "home", tag: "test" }, webpush: { headers: { Urgency: "high", TTL: "600" } } } }) });
+  if (res.getResponseCode() !== 200) { if (res.getResponseCode() === 404) pushDel(tok); return { ok: false, error: "\u09aa\u09be\u09a0\u09be\u09a8\u09cb \u09af\u09be\u09af\u09bc\u09a8\u09bf (" + res.getResponseCode() + ")" }; }
+  return { ok: true };
+}
+function schedSetup() {   // \u09a6\u09c8\u09a8\u09bf\u0995 \u09b8\u0995\u09be\u09b2 \u09e7\u09e6\u099f\u09be (\u09ac\u09be\u0982\u09b2\u09be\u09a6\u09c7\u09b6): \u09b0\u09bf\u09ae\u09be\u0987\u09a8\u09cd\u09a1\u09be\u09b0; \u09b6\u09c1\u0995\u09cd\u09b0\u09ac\u09be\u09b0\u09c7 \u09ac\u09cd\u09af\u09be\u0995\u0986\u09aa\u0993
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === "weeklyBackup") ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger("weeklyBackup").timeBased().everyDays(1).atHour(10).inTimezone("Asia/Dhaka").create();
+  const p = props(); p.setProperty("sched", "daily"); p.setProperty("bk_auto", "1");
+}
+function dailyRun() {
+  if (!props().getProperty("fcm_sa")) return;
+  const d = Number(Utilities.formatDate(new Date(), "Asia/Dhaka", "d")), mo = Number(Utilities.formatDate(new Date(), "Asia/Dhaka", "M")) - 1;
+  if (d === 3 || d === 5) {   // \u099a\u09be\u0981\u09a6\u09be \u09eb \u09a4\u09be\u09b0\u09bf\u0996\u09c7\u09b0 \u09ae\u09a7\u09cd\u09af\u09c7
+    const fines = rows("Fines");
+    rows("Contributions").forEach(function (r) {
+      const nm = String(r[0]).trim(); if (!nm || nm.charAt(0) === "\u203b" || String(r[14] || "").trim() === "\u09a8\u09bf\u09b7\u09cd\u0995\u09cd\u09b0\u09bf\u09af\u09bc") return;
+      const n = function (x) { return Number(String(x).replace(/[^0-9.]/g, "")) || 0; }, exp = Math.round(n(r[1]) * 1000), paid = n(r[2 + mo]), due = Math.max(0, exp - paid);
+      if (!due) return;
+      pushQ(unOf([nm]), { t: d === 5 ? "\u23f0 \u0986\u099c \u099a\u09be\u0981\u09a6\u09be \u09a6\u09c7\u0993\u09af\u09bc\u09be\u09b0 \u09b6\u09c7\u09b7 \u09a6\u09bf\u09a8" : "\ud83d\udcb8 \u099a\u09be\u0981\u09a6\u09be\u09b0 \u0995\u09a5\u09be \u09ae\u09a8\u09c7 \u0995\u09b0\u09bf\u09af\u09bc\u09c7 \u09a6\u09bf\u099a\u09cd\u099b\u09bf",
+        b: (paid ? MONTHS_F[mo] + " \u09ae\u09be\u09b8\u09c7\u09b0 \u099a\u09be\u0981\u09a6\u09be\u09b0 " + tk(paid) + " \u099c\u09ae\u09be \u09b9\u09af\u09bc\u09c7\u099b\u09c7, \u0986\u09b0\u0993 " + tk(due) + " \u09ac\u09be\u0995\u09bf\u0964 " : MONTHS_F[mo] + " \u09ae\u09be\u09b8\u09c7\u09b0 \u099a\u09be\u0981\u09a6\u09be " + tk(due) + " \u09ac\u09be\u0995\u09bf\u0964 ") + (d === 5 ? "\u0986\u099c\u0995\u09c7\u09b0 \u09ae\u09a7\u09cd\u09af\u09c7 \u09a6\u09bf\u09b2\u09c7 \u099c\u09b0\u09bf\u09ae\u09be\u09a8\u09be \u09b2\u09be\u0997\u09ac\u09c7 \u09a8\u09be\u0964" : "\u09eb \u09a4\u09be\u09b0\u09bf\u0996\u09c7\u09b0 \u09ae\u09a7\u09cd\u09af\u09c7 \u09a6\u09bf\u09a8\u0964"), u: "pay", k: "due" });
+    });
+  }
+  const ps = SS.getSheetByName("Polls");
+  if (ps && ps.getLastRow() > 1) {
+    const tm = Utilities.formatDate(new Date(Date.now() + 864e5), "Asia/Dhaka", "d-M-yyyy"), vs = rows("Votes");
+    const mem = {}; rows("Contributions").forEach(function (r) { const nm = String(r[0]).trim(); if (nm && String(r[14] || "").trim() !== "\u09a8\u09bf\u09b7\u09cd\u0995\u09cd\u09b0\u09bf\u09af\u09bc") mem[nm] = 1; });
+    ps.getDataRange().getDisplayValues().slice(1).forEach(function (r) {
+      const m = String(r[4] || "").match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/); if (!m || !pollOpen(r) || Number(m[1]) + "-" + Number(m[2]) + "-" + m[3] !== tm) return;
+      const voted = {}; vs.forEach(function (v) { if (String(v[0]) === String(r[0])) voted[String(v[1])] = 1; });
+      const who = usersAll().filter(function (x) { return mem[String(x[0]).trim()] && !voted[String(x[1]).trim().toLowerCase()]; }).map(function (x) { return String(x[1]).trim().toLowerCase(); });
+      pushQ(who, { t: "\ud83d\uddf3\ufe0f \u0986\u0997\u09be\u09ae\u09c0\u0995\u09be\u09b2 \u09ad\u09cb\u099f \u09b6\u09c7\u09b7", b: String(r[1]) + " \u2014 \u0986\u09aa\u09a8\u09bf \u098f\u0996\u09a8\u09cb \u09ad\u09cb\u099f \u09a6\u09c7\u09a8\u09a8\u09bf\u0964", u: "vote", k: "vote" });
+    });
+  }
+  pushFlush();
+}
 /* ---------- \u09b8\u09be\u09aa\u09cd\u09a4\u09be\u09b9\u09bf\u0995 \u09ac\u09cd\u09af\u09be\u0995\u0986\u09aa (Google Drive-\u098f\u09b0 "UIF Backup" \u09ab\u09cb\u09b2\u09cd\u09a1\u09be\u09b0\u09c7, \u09b6\u09c7\u09b7 \u09ee\u099f\u09bf \u09b0\u09be\u0996\u09be \u09b9\u09af\u09bc) ---------- */
 function bkFolder() {
   const p = props(); let f = null, id = p.getProperty("bk_folder");
@@ -133,7 +238,14 @@ function bkFolder() {
   if (!f) { const it = DriveApp.getFoldersByName("UIF Backup"); f = it.hasNext() ? it.next() : DriveApp.createFolder("UIF Backup"); p.setProperty("bk_folder", f.getId()); }
   return f;
 }
-function bkRun() {
+function bkRun() {   // \u09b8\u09ae\u09af\u09bc\u09b8\u09c2\u099a\u09bf \u09a5\u09c7\u0995\u09c7 \u099a\u09b2\u09c7 (main-\u098f\u09b0 weeklyBackup): \u09a6\u09c8\u09a8\u09bf\u0995 \u09b9\u09b2\u09c7 \u09b0\u09bf\u09ae\u09be\u0987\u09a8\u09cd\u09a1\u09be\u09b0, \u09b6\u09c1\u0995\u09cd\u09b0\u09ac\u09be\u09b0\u09c7 \u09ac\u09cd\u09af\u09be\u0995\u0986\u09aa
+  if (props().getProperty("sched") === "daily") {
+    try { dailyRun(); } catch (e) {}
+    if (Utilities.formatDate(new Date(), "Asia/Dhaka", "u") !== "5") return {};
+  }
+  return bkCopy();
+}
+function bkCopy() {
   let f; try { f = bkFolder(); } catch (e) { throw new Error("\u09ac\u09cd\u09af\u09be\u0995\u0986\u09aa\u09c7\u09b0 \u0985\u09a8\u09c1\u09ae\u09a4\u09bf \u098f\u0996\u09a8\u09cb \u09a6\u09c7\u0993\u09af\u09bc\u09be \u09b9\u09af\u09bc\u09a8\u09bf\u0964 Apps Script-\u098f backupSetup \u098f\u0995\u09ac\u09be\u09b0 Run \u0995\u09b0\u09c1\u09a8\u0964"); }
   DriveApp.getFileById(SS.getId()).makeCopy("UIF \u09ac\u09cd\u09af\u09be\u0995\u0986\u09aa " + Utilities.formatDate(new Date(), "Asia/Dhaka", "dd-MM-yyyy HH-mm"), f);
   const files = [], it = f.getFiles();
@@ -147,7 +259,8 @@ function bkSetup() {   // main \u09ab\u09be\u0987\u09b2\u09c7\u09b0 backupSetup 
   ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === "weeklyBackup") ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger("weeklyBackup").timeBased().onWeekDay(ScriptApp.WeekDay.FRIDAY).atHour(23).inTimezone("Asia/Dhaka").create();
   props().setProperty("bk_auto", "1");
-  const r = bkRun(); Logger.log("\u2705 \u09b8\u09be\u09aa\u09cd\u09a4\u09be\u09b9\u09bf\u0995 \u09ac\u09cd\u09af\u09be\u0995\u0986\u09aa \u099a\u09be\u09b2\u09c1 \u09b9\u09af\u09bc\u09c7\u099b\u09c7 (\u09aa\u09cd\u09b0\u09a4\u09bf \u09b6\u09c1\u0995\u09cd\u09b0\u09ac\u09be\u09b0 \u09b0\u09be\u09a4 \u09e7\u09e7\u099f\u09be, \u09ac\u09be\u0982\u09b2\u09be\u09a6\u09c7\u09b6 \u09b8\u09ae\u09af\u09bc)\u0964 \u09ab\u09cb\u09b2\u09cd\u09a1\u09be\u09b0: " + r.url); return r;
+  if (props().getProperty("sched") === "daily") schedSetup();
+  const r = bkCopy(); Logger.log("\u2705 \u09b8\u09be\u09aa\u09cd\u09a4\u09be\u09b9\u09bf\u0995 \u09ac\u09cd\u09af\u09be\u0995\u0986\u09aa \u099a\u09be\u09b2\u09c1 \u09b9\u09af\u09bc\u09c7\u099b\u09c7 (\u09aa\u09cd\u09b0\u09a4\u09bf \u09b6\u09c1\u0995\u09cd\u09b0\u09ac\u09be\u09b0 \u09b0\u09be\u09a4 \u09e7\u09e7\u099f\u09be, \u09ac\u09be\u0982\u09b2\u09be\u09a6\u09c7\u09b6 \u09b8\u09ae\u09af\u09bc)\u0964 \u09ab\u09cb\u09b2\u09cd\u09a1\u09be\u09b0: " + r.url); return r;
 }
 function cashOn() { return props().getProperty("cash_off") !== "1"; }
 function now() { return Utilities.formatDate(new Date(), "Asia/Dhaka", "dd-MM-yyyy HH:mm"); }
@@ -247,6 +360,10 @@ function readAll(isAdmin, u, isMod) {
   d.Seen = seenList();
   if (isAdmin || (u && u.role === "cashier")) { try { d.RemSent = JSON.parse(props().getProperty("rem_log") || "{}") || {}; } catch (e) { d.RemSent = {}; } }
   if (isAdmin) { const p = props(); d.Backup = { last: p.getProperty("bk_last") || "", url: p.getProperty("bk_url") || "", auto: p.getProperty("bk_auto") === "1", n: Number(p.getProperty("bk_n") || 0) }; }
+  try { const pp = props(), np = pp.getProperty("npf_" + (u ? u.username : "")); d.MyPush = { prefs: np ? JSON.parse(np) : {} };
+    if (isAdmin) { const ps = SS.getSheetByName("Push"), pv = ps && ps.getLastRow() > 1 ? ps.getRange(2, 1, ps.getLastRow() - 1, 1).getDisplayValues().map(function (r) { return String(r[0]); }) : [];
+      const tr = {}; pv.forEach(function (x) { tr[x] = (tr[x] || 0) + 1; });
+      d.Push = { on: !!(pp.getProperty("fcm_cfg") && pp.getProperty("fcm_sa")), sa: !!pp.getProperty("fcm_sa"), sched: pp.getProperty("sched") === "daily", devices: pv.length, users: tr, cfg: JSON.parse(pp.getProperty("fcm_cfg") || "null"), vapid: pp.getProperty("fcm_vapid") || "" }; } } catch (e) {}
   if (isAdmin) d.Users = rows("Users").map(function (r) { return [r[0], r[1], r[3], r[4], r[5], r[6] || ""]; }); // \u09b8\u0982\u0995\u09c7\u09a4\u09be\u09af\u09bc\u09bf\u09a4 \u09aa\u09be\u09b8\u0993\u09af\u09bc\u09be\u09b0\u09cd\u09a1 \u0995\u0996\u09a8\u09cb \u09aa\u09be\u09a0\u09be\u09a8\u09cb \u09b9\u09af\u09bc \u09a8\u09be; \u09b6\u09c1\u09a7\u09c1 \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8\u09c7\u09b0 \u09a6\u09c7\u0993\u09af\u09bc\u09be \u09aa\u09be\u09b8\u0993\u09af\u09bc\u09be\u09b0\u09cd\u09a1 (G)
   return d;
 }
@@ -371,7 +488,33 @@ function adminAction(q, u) {
       if (!s) props().deleteProperty("rem_tpl"); else props().setProperty("rem_tpl", s);
       return {};
     }
-    case "backup_now": return bkRun();
+    case "backup_now": return bkCopy();
+    case "push_cfg": {   // Firebase \u09b8\u09c7\u099f\u0986\u09aa (\u09b6\u09c1\u09a7\u09c1 \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8)
+      const p = props(), c = q.cfg || {}, cfg = {};
+      ["apiKey", "authDomain", "projectId", "storageBucket", "messagingSenderId", "appId"].forEach(function (k) { if (c[k]) cfg[k] = String(c[k]).trim().slice(0, 200); });
+      const vap = String(q.vapid || "").replace(/\s/g, "");
+      if (!cfg.apiKey || !cfg.projectId || !cfg.messagingSenderId || !cfg.appId) throw new Error("Firebase config \u09b8\u09ae\u09cd\u09aa\u09c2\u09b0\u09cd\u09a3 \u09a8\u09af\u09bc (apiKey, projectId, messagingSenderId, appId \u09b2\u09be\u0997\u09ac\u09c7)");
+      if (!/^[A-Za-z0-9_-]{60,120}$/.test(vap)) throw new Error("Web Push key (VAPID) \u09b8\u09a0\u09bf\u0995 \u09a8\u09af\u09bc");
+      let sa = null;
+      if (q.sa) { try { sa = JSON.parse(String(q.sa)); } catch (e) { throw new Error("Service account \u09ab\u09be\u0987\u09b2\u099f\u09bf \u09b8\u09a0\u09bf\u0995 \u09a8\u09af\u09bc"); }
+        if (!sa.client_email || !sa.private_key || !sa.project_id) throw new Error("Service account \u09ab\u09be\u0987\u09b2\u09c7 client_email / private_key \u09a8\u09c7\u0987");
+        if (sa.project_id !== cfg.projectId) throw new Error("Service account \u0986\u09b0 config \u0986\u09b2\u09be\u09a6\u09be Firebase \u09aa\u09cd\u09b0\u099c\u09c7\u0995\u09cd\u099f\u09c7\u09b0");
+        CacheService.getScriptCache().remove("fcm_at"); fcmAuth({ client_email: sa.client_email, private_key: sa.private_key }); }
+      else if (!p.getProperty("fcm_sa")) throw new Error("Service account \u09ab\u09be\u0987\u09b2\u099f\u09bf \u09a6\u09bf\u09a8");
+      p.setProperty("fcm_cfg", JSON.stringify(cfg)); p.setProperty("fcm_vapid", vap);
+      if (sa) p.setProperty("fcm_sa", JSON.stringify({ client_email: sa.client_email, private_key: sa.private_key, project_id: sa.project_id }));
+      let sched = true; try { schedSetup(); } catch (e) { sched = false; }
+      return { sched: sched };
+    }
+    case "push_sched": schedSetup(); return {};
+    case "push_off": { const p = props(); ["fcm_cfg", "fcm_vapid", "fcm_sa"].forEach(function (k) { p.deleteProperty(k); }); return {}; }
+    case "push_send": {   // \u098f\u09a1\u09ae\u09bf\u09a8\u09c7\u09b0 \u09a8\u09bf\u099c\u09c7\u09b0 \u09b2\u09c7\u0996\u09be \u09a8\u09cb\u099f\u09bf\u09ab\u09bf\u0995\u09c7\u09b6\u09a8
+      const ti = String(q.title || "").trim().slice(0, 80), bo = String(q.body || "").trim().slice(0, 300);
+      if (!ti || !bo) throw new Error("\u09b6\u09bf\u09b0\u09cb\u09a8\u09be\u09ae \u0993 \u09ac\u09be\u09b0\u09cd\u09a4\u09be \u09b2\u09bf\u0996\u09c1\u09a8");
+      const to = Array.isArray(q.to) && q.to.length ? q.to.map(String) : null;
+      pushQ(to ? unOf(to) : allUsers(), { t: "\ud83d\udd14 " + ti, b: bo, u: "home", k: "msg" }, u.username, true);
+      return {};
+    }
     /* ----- \u09a8\u09a4\u09c1\u09a8 \u09ac\u099b\u09b0 \u09b6\u09c1\u09b0\u09c1 ----- */
     case "year_close": {
       const y = curYear();
@@ -423,6 +566,7 @@ function adminAction(q, u) {
         if (fv.some(function (r) { return String(r[0]).trim() === nm && String(r[3]).trim() === MONTHS[m]; })) return;
         const sr = Number(String(c[1]).replace(/[^0-9.]/g, "")) || 0;
         fs.appendRow([nm, Math.round(sr * 200), "due", MONTHS[m]]); added++;
+        pushQ(unOf([nm]), { t: "\u2696\ufe0f \u099c\u09b0\u09bf\u09ae\u09be\u09a8\u09be \u09af\u09cb\u0997 \u09b9\u09af\u09bc\u09c7\u099b\u09c7", b: MONTHS_F[m] + " \u09ae\u09be\u09b8\u09c7\u09b0 \u099a\u09be\u0981\u09a6\u09be \u09a6\u09c7\u09b0\u09bf\u09a4\u09c7 \u09b9\u0993\u09af\u09bc\u09be\u09af\u09bc \u099c\u09b0\u09bf\u09ae\u09be\u09a8\u09be " + tk(Math.round(sr * 200)) + "\u0964 \u0985\u09cd\u09af\u09be\u09aa\u09c7 \"\u099f\u09be\u0995\u09be \u099c\u09ae\u09be \u09a6\u09bf\u09a8\" \u09a5\u09c7\u0995\u09c7 \u09aa\u09b0\u09bf\u09b6\u09cb\u09a7 \u0995\u09b0\u09a4\u09c7 \u09aa\u09be\u09b0\u09ac\u09c7\u09a8\u0964", u: "pay", k: "due" }, u.username);
       });
       return { added: added };
     }
@@ -453,6 +597,7 @@ function adminAction(q, u) {
       const id = newId(sh, "V"), r = sh.getLastRow() + 1;
       sh.getRange(r, 1, 1, 8).setNumberFormat("@");
       sh.getRange(r, 1, 1, 8).setValues([[id, qq, opts.slice(0, 8).join("|"), rule, end, "\u099a\u09be\u09b2\u09c1", now(), String(q.desc || "").slice(0, 300)]]);
+      pushQ(allUsers(), { t: "\ud83d\uddf3\ufe0f \u09a8\u09a4\u09c1\u09a8 \u09ad\u09cb\u099f", b: qq + (end ? " (\u09b6\u09c7\u09b7 \u09a4\u09be\u09b0\u09bf\u0996 " + bnNum(end) + ")" : ""), u: "vote", k: "vote" }, u.username);
       return { id: id };
     }
     case "poll_edit": {   // \u09ad\u09cb\u099f\u09c7\u09b0 \u09b8\u09ac\u0995\u09bf\u099b\u09c1 \u09af\u09c7\u0995\u09cb\u09a8\u09cb \u09b8\u09ae\u09af\u09bc \u09ac\u09a6\u09b2\u09be\u09a8\u09cb \u09af\u09be\u09af\u09bc; \u09ad\u09cb\u099f \u0985\u09aa\u09b6\u09a8\u09c7\u09b0 \u09b8\u09be\u09a5\u09c7 \u09a5\u09be\u0995\u09c7, \u09ac\u09be\u09a6 \u09a6\u09c7\u0993\u09af\u09bc\u09be \u0985\u09aa\u09b6\u09a8\u09c7\u09b0 \u09ad\u09cb\u099f \u09ac\u09be\u09a4\u09bf\u09b2 \u09b9\u09af\u09bc
@@ -505,16 +650,19 @@ function adminAction(q, u) {
     case "cash_toggle": { if (q.on) props().deleteProperty("cash_off"); else props().setProperty("cash_off", "1"); return {}; }
     case "rule_add": {
       const t = String(q.title || "").trim(); if (!t) throw new Error("\u09b6\u09bf\u09b0\u09cb\u09a8\u09be\u09ae \u09b2\u09bf\u0996\u09c1\u09a8");
-      rulesSheet().appendRow([t, String(q.body || "")]); return {};
+      rulesSheet().appendRow([t, String(q.body || "")]);
+      pushQ(allUsers(), { t: "\ud83d\udcdc \u09a8\u09a4\u09c1\u09a8 \u09a8\u09bf\u09af\u09bc\u09ae \u09af\u09cb\u0997 \u09b9\u09af\u09bc\u09c7\u099b\u09c7", b: t, u: "rules", k: "rule" }, u.username); return {};
     }
     case "rule_edit": {
       const sh = rulesSheet(), r = checkRow(sh, q.row, q.key, 1), t = String(q.title || "").trim(); if (!t) throw new Error("\u09b6\u09bf\u09b0\u09cb\u09a8\u09be\u09ae \u09b2\u09bf\u0996\u09c1\u09a8");
-      sh.getRange(r, 1, 1, 2).setValues([[t, String(q.body || "")]]); return {};
+      sh.getRange(r, 1, 1, 2).setValues([[t, String(q.body || "")]]);
+      pushQ(allUsers(), { t: "\ud83d\udcdc \u09a8\u09bf\u09af\u09bc\u09ae \u09ac\u09a6\u09b2\u09c7\u099b\u09c7", b: t, u: "rules", k: "rule" }, u.username); return {};
     }
     case "rule_del": { const sh = rulesSheet(); sh.deleteRow(checkRow(sh, q.row, q.key, 1)); return {}; }
     case "notice_add": {
       const sh = sheet("Notices"); sh.insertRowAfter(1);
       sh.getRange(2, 1, 1, 3).setValues([[String(q.date || ""), String(q.title || ""), String(q.body || "")]]);
+      pushQ(allUsers(), { t: "\ud83d\udce3 \u09a8\u09a4\u09c1\u09a8 \u09a8\u09cb\u099f\u09bf\u09b6", b: String(q.title || q.body || "").slice(0, 150), u: "not", k: "not" }, u.username);
       return {};
     }
     case "notice_edit": {
@@ -584,7 +732,7 @@ function logAct(u, q) {   // Log \u09b6\u09bf\u099f: A \u09b8\u09ae\u09af\u09bc 
   try {
     let sh = SS.getSheetByName("Log");
     if (!sh) { sh = SS.insertSheet("Log"); sh.getRange(1, 1, 1, 5).setValues([["\u09b8\u09ae\u09af\u09bc", "\u0995\u09c7", "\u09ad\u09c2\u09ae\u09bf\u0995\u09be", "\u0995\u09be\u099c", "\u09ac\u09bf\u09ac\u09b0\u09a3"]]); }
-    const skip = { action: 1, token: 1, password: 1, key: 1, row: 1, fields: 1, confirmYear: 1 };
+    const skip = { action: 1, token: 1, password: 1, key: 1, row: 1, fields: 1, confirmYear: 1, sa: 1, cfg: 1, vapid: 1, ptk: 1 };
     const d = Object.keys(q).filter(function (k) { return !skip[k] && q[k] !== "" && q[k] != null; }).map(function (k) {
       let v = q[k]; if (typeof v === "object") v = JSON.stringify(v); return k + "=" + String(v).slice(0, 220);
     }).join(", ");
@@ -704,6 +852,7 @@ function payAction(q, u) {
       const id = newPayId(sh), r = sh.getLastRow() + 1;
       sh.getRange(r, 1, 1, PAY_HEAD.length).setNumberFormat("@");
       sh.getRange(r, 1, 1, PAY_HEAD.length).setValues([payRow(id, u.name, last4, amt, date, tg.type, tg.mon, meth, ST.p, "")]);
+      pushQ(staffUsers(), { t: "\ud83d\udcb8 \u09a8\u09a4\u09c1\u09a8 \u099f\u09be\u0995\u09be\u09b0 \u09b0\u09bf\u0995\u09cb\u09af\u09bc\u09c7\u09b8\u09cd\u099f", b: u.name + " \u00b7 " + tk(amt) + " \u00b7 " + payWhat(tg) + (meth && meth !== "MFS" ? " (" + String(meth).replace(/^'/, "") + ")" : ""), u: "cash", k: "req" }, u.username);
       return { id: id };
     }
     case "pay_cash": {     // \u0995\u09cd\u09af\u09be\u09b6 \u099c\u09ae\u09be \u2013 \u09b6\u09c1\u09a7\u09c1 \u0995\u09cd\u09af\u09be\u09b6\u09bf\u09af\u09bc\u09be\u09b0 \u0993 \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8, \u09b8\u09b0\u09be\u09b8\u09b0\u09bf "\u099c\u09ae\u09be \u09b9\u09af\u09bc\u09c7\u099b\u09c7"
@@ -718,6 +867,7 @@ function payAction(q, u) {
       sh.getRange(r, 1, 1, PAY_HEAD.length).setNumberFormat("@");
       sh.getRange(r, 1, 1, PAY_HEAD.length).setValues([row]);
       applyPay(row, 1);
+      pushQ(unOf([member]), { t: "\u2705 \u0995\u09cd\u09af\u09be\u09b6 \u099c\u09ae\u09be \u09b9\u09af\u09bc\u09c7\u099b\u09c7", b: payWhat(tg) + " " + tk(amt) + " \u099c\u09ae\u09be \u09b9\u09af\u09bc\u09c7\u099b\u09c7 \u2014 " + u.name, u: "pay:r", k: "pay" }, u.username);
       return { id: id };
     }
     case "pay_info": {     // \u0995\u09cd\u09af\u09be\u09b6\u09bf\u09af\u09bc\u09be\u09b0/\u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8: \u099f\u09be\u0995\u09be \u09aa\u09be\u09a0\u09be\u09a8\u09cb\u09b0 \u09a8\u09be\u09ae\u09cd\u09ac\u09be\u09b0, \u09a7\u09b0\u09a8 \u0993 WhatsApp
@@ -754,6 +904,11 @@ function payAction(q, u) {
       if (old === ST.a) applyPay(p.r, -1);
       if (ns === ST.a) applyPay(p.r, 1);
       sh.getRange(p.row, 10, 1, 4).setValues([[ns, u.name, now(), (p.r[12] ? p.r[12] + "\n" : "") + now() + " " + u.name + ": " + ns]]);
+      if (ns === ST.a || ns === ST.r) {
+        const w = payWhat({ type: p.r[6], mon: String(p.r[7]).trim() }), a = tk(Number(String(p.r[4]).replace(/[^0-9.]/g, "")) || 0);
+        pushQ(unOf([String(p.r[2]).trim()]), ns === ST.a ? { t: "\u2705 \u099f\u09be\u0995\u09be \u099c\u09ae\u09be \u09b9\u09af\u09bc\u09c7\u099b\u09c7", b: w + " " + a + " \u2014 \u09af\u09be\u099a\u09be\u0987 \u0995\u09b0\u09c7\u099b\u09c7\u09a8 " + u.name, u: "pay:r", k: "pay" }
+          : { t: "\u274c \u09b0\u09bf\u0995\u09cb\u09af\u09bc\u09c7\u09b8\u09cd\u099f \u09ae\u09c7\u09b2\u09c7\u09a8\u09bf", b: w + " " + a + " \u2014 \u0995\u09cd\u09af\u09be\u09b6\u09bf\u09af\u09bc\u09be\u09b0 \u09ae\u09c7\u09b2\u09be\u09a4\u09c7 \u09aa\u09be\u09b0\u09c7\u09a8\u09a8\u09bf\u0964 \u09a4\u09a5\u09cd\u09af \u09a6\u09c7\u0996\u09c7 \u0995\u09cd\u09af\u09be\u09b6\u09bf\u09af\u09bc\u09be\u09b0\u09c7\u09b0 \u09b8\u09be\u09a5\u09c7 \u09af\u09cb\u0997\u09be\u09af\u09cb\u0997 \u0995\u09b0\u09c1\u09a8\u0964", u: "pay:r", k: "pay" }, u.username);
+      }
       return {};
     }
     case "pay_del": {      // \u09b6\u09c1\u09a7\u09c1 \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8 \u2013 \u09ae\u09c1\u099b\u09c7 \u09ab\u09c7\u09b2\u09be (\u099c\u09ae\u09be \u09b9\u09af\u09bc\u09c7 \u09a5\u09be\u0995\u09b2\u09c7 \u09b9\u09bf\u09b8\u09be\u09ac \u09a5\u09c7\u0995\u09c7\u0993 \u09ac\u09be\u09a6)
@@ -769,7 +924,7 @@ function payAction(q, u) {
 
 /** Apps Script \u098f\u09a1\u09bf\u099f\u09b0\u09c7 \u098f\u0995\u09ac\u09be\u09b0 \u098f\u099f\u09bf Run \u0995\u09b0\u09c1\u09a8 \u2013 \u0985\u09a8\u09c1\u09ae\u09a4\u09bf \u09a6\u09c7\u0993\u09af\u09bc\u09be\u09b0 \u099c\u09a8\u09cd\u09af
  *  \u09b8\u09be\u09aa\u09cd\u09a4\u09be\u09b9\u09bf\u0995 \u09ac\u09cd\u09af\u09be\u0995\u0986\u09aa \u099a\u09be\u09b2\u09c1 \u0995\u09b0\u09a4\u09c7 main \u09ab\u09be\u0987\u09b2\u09c7 \u098f\u0987 \u09a6\u09c1\u099f\u09bf \u09b2\u09be\u0987\u09a8 \u09a5\u09be\u0995\u09a4\u09c7 \u09b9\u09ac\u09c7:
- *  function backupSetup() { DriveApp.getRootFolder(); ScriptApp.getProjectTriggers(); bkSetup(); }
+ *  function backupSetup() { if (0) { DriveApp.createFolder(""); DriveApp.getFileById("").makeCopy(""); } ScriptApp.getProjectTriggers(); bkSetup(); }
  *  function weeklyBackup() { bkRun(); }
  */
 function setup() { Logger.log("\u09a0\u09bf\u0995 \u0986\u099b\u09c7: " + SS.getName() + " \u2013 Users \u09b6\u09bf\u099f: " + (SS.getSheetByName("Users") ? "\u0986\u099b\u09c7" : "\u09a8\u09c7\u0987")); }
