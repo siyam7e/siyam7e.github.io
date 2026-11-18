@@ -1,6 +1,10 @@
+/* UIF সার্ভার — সংস্করণ 1A (১৮-১১-২০২৬)
+ * Apps Script-এর লোডার এই ফাইলের SHA-256 মিলিয়ে তবেই চালায়। এক অক্ষর বদলালেও লোডারের UIF_SHA বদলাতে হবে।
+ */
+const UIF_VER = "1A";
 const SS = SpreadsheetApp.getActive();
 const MONTHS = ["\u099c\u09be\u09a8\u09c1","\u09ab\u09c7\u09ac\u09cd\u09b0\u09c1","\u09ae\u09be\u09b0\u09cd\u099a","\u098f\u09aa\u09cd\u09b0\u09bf","\u09ae\u09c7","\u099c\u09c1\u09a8","\u099c\u09c1\u09b2\u09be","\u0986\u0997","\u09b8\u09c7\u09aa\u09cd\u099f\u09c7","\u0985\u0995\u09cd\u099f\u09cb","\u09a8\u09ad\u09c7","\u09a1\u09bf\u09b8\u09c7"];
-const READ_SHEETS = ["Contributions","Fines","Summary","Investments","Notices","Members","Images","Payments","Rules","Ledger","Polls"];
+const READ_SHEETS = ["Contributions","Fines","Summary","Investments","Notices","Members","Images","Payments","Rules","Ledger","Polls","MemberIDs"];
 // Payments \u09b6\u09bf\u099f\u09c7\u09b0 \u0995\u09b2\u09be\u09ae: A \u0986\u0987\u09a1\u09bf | B \u099c\u09ae\u09be\u09b0 \u09b8\u09ae\u09af\u09bc | C \u09b8\u09a6\u09b8\u09cd\u09af | D \u09a8\u09be\u09ae\u09cd\u09ac\u09be\u09b0\u09c7\u09b0 \u09b6\u09c7\u09b7 \u09ea | E \u099f\u09be\u0995\u09be | F \u09aa\u09be\u09a0\u09be\u09a8\u09cb\u09b0 \u09a4\u09be\u09b0\u09bf\u0996 | G \u09a7\u09b0\u09a8 | H \u09ae\u09be\u09b8 | I \u09ae\u09be\u09a7\u09cd\u09af\u09ae | J \u0985\u09ac\u09b8\u09cd\u09a5\u09be | K \u09af\u09be\u099a\u09be\u0987\u0995\u09be\u09b0\u09c0 | L \u09af\u09be\u099a\u09be\u0987\u09af\u09bc\u09c7\u09b0 \u09b8\u09ae\u09af\u09bc | M \u0987\u09a4\u09bf\u09b9\u09be\u09b8
 const PAY_HEAD = ["\u0986\u0987\u09a1\u09bf","\u099c\u09ae\u09be\u09b0 \u09b8\u09ae\u09af\u09bc","\u09b8\u09a6\u09b8\u09cd\u09af","\u09a8\u09be\u09ae\u09cd\u09ac\u09be\u09b0\u09c7\u09b0 \u09b6\u09c7\u09b7 \u09ea","\u099f\u09be\u0995\u09be","\u09aa\u09be\u09a0\u09be\u09a8\u09cb\u09b0 \u09a4\u09be\u09b0\u09bf\u0996","\u09a7\u09b0\u09a8","\u09ae\u09be\u09b8","\u09ae\u09be\u09a7\u09cd\u09af\u09ae","\u0985\u09ac\u09b8\u09cd\u09a5\u09be","\u09af\u09be\u099a\u09be\u0987\u0995\u09be\u09b0\u09c0","\u09af\u09be\u099a\u09be\u0987\u09af\u09bc\u09c7\u09b0 \u09b8\u09ae\u09af\u09bc","\u0987\u09a4\u09bf\u09b9\u09be\u09b8"];
 // Rules \u09b6\u09bf\u099f\u09c7\u09b0 \u0995\u09b2\u09be\u09ae: A \u09b6\u09bf\u09b0\u09cb\u09a8\u09be\u09ae | B \u09ac\u09bf\u09b8\u09cd\u09a4\u09be\u09b0\u09bf\u09a4  (\u09aa\u09cd\u09b0\u09a5\u09ae\u09ac\u09be\u09b0 \u09a8\u09bf\u099c\u09c7 \u09a5\u09c7\u0995\u09c7\u0987 \u09a4\u09c8\u09b0\u09bf \u09b9\u09af\u09bc)
@@ -31,6 +35,7 @@ function doGet() { return out({ ok: true, msg: "UIF API \u099a\u09be\u09b2\u09c1
 
 function doPost(e) {
   try {
+    migrate1a();
     const q = JSON.parse((e && e.postData && e.postData.contents) || "{}");
     if (q.action === "login") {   // \u09b2\u0997\u0987\u09a8\u09c7\u09b0 \u09b8\u09be\u09a5\u09c7\u0987 \u09b8\u09ac \u09a4\u09a5\u09cd\u09af (\u098f\u0995\u09ac\u09be\u09b0\u09c7, \u09a6\u09cd\u09b0\u09c1\u09a4)
       const r = login(q.username, q.password);
@@ -45,6 +50,8 @@ function doPost(e) {
       const kicked = q.token && CacheService.getScriptCache().get("k_" + q.token);
       return out({ ok: false, auth: false, kicked: !!kicked, error: kicked ? "kicked" : "login_required" });
     }
+    // অ্যাডমিনের দেওয়া অস্থায়ী পাসওয়ার্ডে ঢুকলে আগে নিজের পাসওয়ার্ড দিতে হবে
+    if (u.apw && !MUST_OK[q.action]) return out({ ok: false, error: "must_change_pw" });
     if (q.action === "logout") { props().deleteProperty("t_" + q.token); if (q.ptk) pushDel(String(q.ptk)); return out({ ok: true }); }
     if (q.action === "push_reg" || q.action === "push_unreg" || q.action === "push_pref" || q.action === "push_test") return out(pushUser(u, q));
     if (q.action === "ping") {   // \u0985\u09cd\u09af\u09be\u09aa \u0996\u09cb\u09b2\u09be \u09a5\u09be\u0995\u09b2\u09c7 \u09aa\u09cd\u09b0\u09a4\u09bf \u09ae\u09bf\u09a8\u09bf\u099f\u09c7 \u2013 \u0995\u09c7 \u0985\u09a8\u09b2\u09be\u0987\u09a8\u09c7 \u0986\u099b\u09c7\u09a8
@@ -101,6 +108,7 @@ function rows(n) { const s = SS.getSheetByName(n); if (!s) return []; return s.g
 function isOff(v) { return String(v).trim() === "\u09ac\u09a8\u09cd\u09a7"; }
 function roleOf(v) { v = String(v).trim().toLowerCase(); return v === "admin" ? "admin" : v === "cashier" ? "cashier" : v === "moderator" ? "moderator" : "member"; }
 // \u09ae\u09a1\u09be\u09b0\u09c7\u099f\u09b0 \u09af\u09be \u0995\u09b0\u09a4\u09c7 \u09aa\u09be\u09b0\u09ac\u09c7\u09a8
+const MUST_OK = { logout: 1, ping: 1, data: 1, pass_change: 1, push_reg: 1, push_unreg: 1, push_pref: 1, push_test: 1 };
 const MOD_ACTIONS = { notice_add: 1, notice_edit: 1, notice_del: 1, poll_add: 1, poll_edit: 1, poll_close: 1, poll_del: 1, info_set: 1, img_add: 1, img_del: 1 };
 function bnNum(n) { return String(n).replace(/\d/g, function (d) { return "\u09e6\u09e7\u09e8\u09e9\u09ea\u09eb\u09ec\u09ed\u09ee\u09ef"[d]; }); }
 function curYear() { return Number(props().getProperty("set_year")) || 2026; }
@@ -292,7 +300,7 @@ function login(username, password) {
       good = true;
       const s = Utilities.getUuid().replace(/-/g, "").slice(0, 10);
       u.sh.getRange(u.row, 3).setValue("sha256$" + s + "$" + hash(s, password));
-      u.sh.getRange(u.row, 7).setValue(password);   // \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8 Sheet-\u098f \u09b2\u09bf\u0996\u09c7\u099b\u09c7\u09a8, \u09a4\u09be\u0987 \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8\u09c7\u09b0 \u09a6\u09c7\u0993\u09af\u09bc\u09be \u09aa\u09be\u09b8\u0993\u09af\u09bc\u09be\u09b0\u09cd\u09a1
+      u.sh.getRange(u.row, 7).setValue("1");   // \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8 Sheet-\u098f \u09b2\u09bf\u0996\u09c7\u099b\u09c7\u09a8, \u09a4\u09be\u0987 \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8\u09c7\u09b0 \u09a6\u09c7\u0993\u09af\u09bc\u09be \u09aa\u09be\u09b8\u0993\u09af\u09bc\u09be\u09b0\u09cd\u09a1
     }
   }
   if (u && u.off) return { ok: false, error: "disabled" };
@@ -307,11 +315,14 @@ function login(username, password) {
 
 function auth(token) {
   if (!token) return null;
-  const v = props().getProperty("t_" + token);
+  const p = props(), v = p.getProperty("t_" + token);
   if (!v) return null;
-  const un = String(v).split("|")[0];
+  const a = String(v).split("|"), un = a[0], ts = Number(a[1]) || 0, t = Date.now();
   const u = findUser(un);
-  if (!u || u.off) { props().deleteProperty("t_" + token); return null; }
+  if (!u || u.off) { p.deleteProperty("t_" + token); return null; }
+  // অব্যবহৃত থাকলে মেয়াদ শেষ: অ্যাডমিন ৭ দিন, অন্যরা ৩০ দিন
+  if (ts && t - ts > (u.role === "admin" ? 7 : 30) * 864e5) { p.deleteProperty("t_" + token); return null; }
+  if (!ts || t - ts > 864e5) p.setProperty("t_" + token, un + "|" + t);
   return u;
 }
 
@@ -345,11 +356,21 @@ function readShared() {
   try { const js = JSON.stringify(d); if (js.length < 45000) c.put("rs1", js, 20); } catch (e) {}
   return d;
 }
+// সদস্যের তথ্য: নাম, পূর্ণ নাম, পেশা, যোগদান, মাসিক চাঁদা সবাই দেখেন; বাকিটা শুধু নিজের, অ্যাডমিন ও মডারেটর (ক্যাশিয়ার মোবাইলও)
+const MEM_PUBLIC = { 0: 1, 1: 1, 7: 1, 11: 1, 12: 1 };
+function memFilter(list, u) {
+  if (!u || u.role === "admin" || u.role === "moderator") return list;
+  return (list || []).map(function (r) {
+    if (String(r[0]).trim() === u.name) return r;
+    return r.map(function (v, i) { return MEM_PUBLIC[i] || (i === 9 && u.role === "cashier") ? v : ""; });
+  });
+}
 function dropRS() { try { CacheService.getScriptCache().remove("rs1"); } catch (e) {} }
 function readAll(isAdmin, u, isMod) {
   const d = {};
   rulesSheet();
   const sh0 = readShared(); READ_SHEETS.forEach(function (n) { d[n] = sh0[n] || []; });
+  d.Members = memFilter(d.Members, u);
   // \u09ad\u09cb\u099f: \u09b8\u09ac\u09be\u0987 \u09b6\u09c1\u09a7\u09c1 \u09ae\u09cb\u099f \u09b8\u0982\u0996\u09cd\u09af\u09be \u09a6\u09c7\u0996\u09ac\u09c7\u09a8; \u0995\u09c7 \u0995\u09c0 \u09a6\u09bf\u09af\u09bc\u09c7\u099b\u09c7\u09a8 \u09b6\u09c1\u09a7\u09c1 \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8
   const vs = rows("Votes"), cnt = {}, mine = {};
   vs.forEach(function (r) { const id = String(r[0]), c = Number(r[3]); if (!cnt[id]) cnt[id] = []; cnt[id][c] = (cnt[id][c] || 0) + 1; if (u && String(r[1]) === u.username) mine[id] = c; });
@@ -364,7 +385,7 @@ function readAll(isAdmin, u, isMod) {
     if (isAdmin) { const ps = SS.getSheetByName("Push"), pv = ps && ps.getLastRow() > 1 ? ps.getRange(2, 1, ps.getLastRow() - 1, 1).getDisplayValues().map(function (r) { return String(r[0]); }) : [];
       const tr = {}; pv.forEach(function (x) { tr[x] = (tr[x] || 0) + 1; });
       d.Push = { on: !!(pp.getProperty("fcm_cfg") && pp.getProperty("fcm_sa")), sa: !!pp.getProperty("fcm_sa"), sched: pp.getProperty("sched") === "daily", devices: pv.length, users: tr, cfg: JSON.parse(pp.getProperty("fcm_cfg") || "null"), vapid: pp.getProperty("fcm_vapid") || "" }; } } catch (e) {}
-  if (isAdmin) d.Users = rows("Users").map(function (r) { return [r[0], r[1], r[3], r[4], r[5], r[6] || ""]; }); // \u09b8\u0982\u0995\u09c7\u09a4\u09be\u09af\u09bc\u09bf\u09a4 \u09aa\u09be\u09b8\u0993\u09af\u09bc\u09be\u09b0\u09cd\u09a1 \u0995\u0996\u09a8\u09cb \u09aa\u09be\u09a0\u09be\u09a8\u09cb \u09b9\u09af\u09bc \u09a8\u09be; \u09b6\u09c1\u09a7\u09c1 \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8\u09c7\u09b0 \u09a6\u09c7\u0993\u09af\u09bc\u09be \u09aa\u09be\u09b8\u0993\u09af\u09bc\u09be\u09b0\u09cd\u09a1 (G)
+  if (isAdmin) d.Users = rows("Users").map(function (r) { return [r[0], r[1], r[3], r[4], r[5], String(r[6] || "").trim() ? "1" : ""]; }); // \u09b8\u0982\u0995\u09c7\u09a4\u09be\u09af\u09bc\u09bf\u09a4 \u09aa\u09be\u09b8\u0993\u09af\u09bc\u09be\u09b0\u09cd\u09a1 \u0995\u0996\u09a8\u09cb \u09aa\u09be\u09a0\u09be\u09a8\u09cb \u09b9\u09af\u09bc \u09a8\u09be; \u09b6\u09c1\u09a7\u09c1 \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8\u09c7\u09b0 \u09a6\u09c7\u0993\u09af\u09bc\u09be \u09aa\u09be\u09b8\u0993\u09af\u09bc\u09be\u09b0\u09cd\u09a1 (G)
   return d;
 }
 
@@ -392,7 +413,7 @@ function adminAction(q, u) {
       if (memberExists(name)) throw new Error("\u098f\u0987 \u09a8\u09be\u09ae\u09c7 \u09b8\u09a6\u09b8\u09cd\u09af \u0986\u0997\u09c7\u0987 \u0986\u099b\u09c7");
       const sr = Number(q.shares); if (!(sr > 0)) throw new Error("\u09a8\u09be\u09ae \u09b8\u0982\u0996\u09cd\u09af\u09be \u09b8\u09a0\u09bf\u0995 \u09a8\u09af\u09bc");
       const row = [name, sr]; for (let i = 0; i < 12; i++) row.push(""); row.push("");
-      sh.appendRow(row); return {};
+      sh.appendRow(row); midAssign(name); return {};
     }
     case "mem_edit": {
       const sh = sheet("Contributions"), r = checkRow(sh, q.row, q.key), name = String(q.name || "").trim(), old = String(q.key).trim();
@@ -400,7 +421,7 @@ function adminAction(q, u) {
       const sr = Number(q.shares); if (!(sr > 0)) throw new Error("\u09a8\u09be\u09ae \u09b8\u0982\u0996\u09cd\u09af\u09be \u09b8\u09a0\u09bf\u0995 \u09a8\u09af\u09bc");
       if (name !== old && memberExists(name)) throw new Error("\u098f\u0987 \u09a8\u09be\u09ae\u09c7 \u09b8\u09a6\u09b8\u09cd\u09af \u0986\u0997\u09c7\u0987 \u0986\u099b\u09c7");
       sh.getRange(r, 1, 1, 2).setValues([[name, sr]]);
-      if (name !== old) renameEverywhere(old, name);
+      if (name !== old) { renameEverywhere(old, name); midRename(old, name); }
       return {};
     }
     case "mem_active": {   // \u09a8\u09bf\u09b7\u09cd\u0995\u09cd\u09b0\u09bf\u09af\u09bc \u0995\u09b0\u09b2\u09c7 \u09b9\u09bf\u09b8\u09be\u09ac \u09a5\u09be\u0995\u09c7, \u09b6\u09c1\u09a7\u09c1 \u09b2\u0997\u0987\u09a8 \u09ac\u09a8\u09cd\u09a7 \u09b9\u09af\u09bc
@@ -420,17 +441,17 @@ function adminAction(q, u) {
       if (!memberExists(name)) throw new Error("\u0986\u0997\u09c7 \u09b8\u09a6\u09b8\u09cd\u09af \u09a4\u09be\u09b2\u09bf\u0995\u09be\u09af\u09bc \u09a8\u09be\u09ae\u099f\u09bf \u09af\u09cb\u0997 \u0995\u09b0\u09c1\u09a8");
       if (!/^[a-z0-9._]{3,20}$/.test(un)) throw new Error("\u0987\u0989\u099c\u09be\u09b0\u09a8\u09c7\u09ae \u09e9\u2013\u09e8\u09e6 \u0985\u0995\u09cd\u09b7\u09b0\u09c7\u09b0 \u0987\u0982\u09b0\u09c7\u099c\u09bf \u099b\u09cb\u099f \u09b9\u09be\u09a4\u09c7\u09b0 \u0985\u0995\u09cd\u09b7\u09b0/\u09b8\u0982\u0996\u09cd\u09af\u09be \u09b9\u09a4\u09c7 \u09b9\u09ac\u09c7");
       if (findUser(un)) throw new Error("\u098f\u0987 \u0987\u0989\u099c\u09be\u09b0\u09a8\u09c7\u09ae \u0986\u0997\u09c7\u0987 \u0986\u099b\u09c7");
-      if (pw.length < 4) throw new Error("\u09aa\u09be\u09b8\u0993\u09af\u09bc\u09be\u09b0\u09cd\u09a1 \u0995\u09ae\u09aa\u0995\u09cd\u09b7\u09c7 \u09ea \u0985\u0995\u09cd\u09b7\u09b0\u09c7\u09b0 \u09b9\u09a4\u09c7 \u09b9\u09ac\u09c7");
+      if (pw.length < 6) throw new Error("\u09aa\u09be\u09b8\u0993\u09af\u09bc\u09be\u09b0\u09cd\u09a1 \u0995\u09ae\u09aa\u0995\u09cd\u09b7\u09c7 \u09ec \u0985\u0995\u09cd\u09b7\u09b0\u09c7\u09b0 \u09b9\u09a4\u09c7 \u09b9\u09ac\u09c7");
       const salt = Utilities.getUuid().replace(/-/g, "").slice(0, 10);
-      sheet("Users").appendRow([name, un, "sha256$" + salt + "$" + hash(salt, pw), "member", "\u099a\u09be\u09b2\u09c1", "", pw]);
+      sheet("Users").appendRow([name, un, "sha256$" + salt + "$" + hash(salt, pw), "member", "\u099a\u09be\u09b2\u09c1", "", "1"]);
       return {};
     }
     case "user_pass": {
       const u = findUser(q.username); if (!u) throw new Error("\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u0995\u09be\u09b0\u09c0 \u09aa\u09be\u0993\u09af\u09bc\u09be \u09af\u09be\u09af\u09bc\u09a8\u09bf");
-      const pw = String(q.password || ""); if (pw.length < 4) throw new Error("\u09aa\u09be\u09b8\u0993\u09af\u09bc\u09be\u09b0\u09cd\u09a1 \u0995\u09ae\u09aa\u0995\u09cd\u09b7\u09c7 \u09ea \u0985\u0995\u09cd\u09b7\u09b0\u09c7\u09b0 \u09b9\u09a4\u09c7 \u09b9\u09ac\u09c7");
+      const pw = String(q.password || ""); if (pw.length < 6) throw new Error("\u09aa\u09be\u09b8\u0993\u09af\u09bc\u09be\u09b0\u09cd\u09a1 \u0995\u09ae\u09aa\u0995\u09cd\u09b7\u09c7 \u09ec \u0985\u0995\u09cd\u09b7\u09b0\u09c7\u09b0 \u09b9\u09a4\u09c7 \u09b9\u09ac\u09c7");
       const salt = Utilities.getUuid().replace(/-/g, "").slice(0, 10);
       u.sh.getRange(u.row, 3).setValue("sha256$" + salt + "$" + hash(salt, pw));
-      u.sh.getRange(u.row, 7).setValue(pw);   // \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8\u09c7\u09b0 \u09a6\u09c7\u0993\u09af\u09bc\u09be \u2013 \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8 \u09a6\u09c7\u0996\u09a4\u09c7 \u09aa\u09be\u09b0\u09ac\u09c7\u09a8 \u09af\u09a4\u0995\u09cd\u09b7\u09a3 \u09b8\u09a6\u09b8\u09cd\u09af \u09a8\u09bf\u099c\u09c7 \u09a8\u09be \u09ac\u09a6\u09b2\u09be\u09a8
+      u.sh.getRange(u.row, 7).setValue("1");   // \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8\u09c7\u09b0 \u09a6\u09c7\u0993\u09af\u09bc\u09be \u2013 \u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8 \u09a6\u09c7\u0996\u09a4\u09c7 \u09aa\u09be\u09b0\u09ac\u09c7\u09a8 \u09af\u09a4\u0995\u09cd\u09b7\u09a3 \u09b8\u09a6\u09b8\u09cd\u09af \u09a8\u09bf\u099c\u09c7 \u09a8\u09be \u09ac\u09a6\u09b2\u09be\u09a8
       dropTokens(u.username); return {};
     }
     case "user_rename": {
@@ -565,7 +586,7 @@ function adminAction(q, u) {
         const c = cv.filter(function (r) { return String(r[0]).trim() === nm; })[0]; if (!c) return;
         if (fv.some(function (r) { return String(r[0]).trim() === nm && String(r[3]).trim() === MONTHS[m]; })) return;
         const sr = Number(String(c[1]).replace(/[^0-9.]/g, "")) || 0;
-        fs.appendRow([nm, Math.round(sr * 200), "due", MONTHS[m]]); added++;
+        fs.appendRow([nm, Math.round(sr * 200), "due", MONTHS[m], newId2("F")]); added++;
         pushQ(unOf([nm]), { t: "\u2696\ufe0f \u099c\u09b0\u09bf\u09ae\u09be\u09a8\u09be \u09af\u09cb\u0997 \u09b9\u09af\u09bc\u09c7\u099b\u09c7", b: MONTHS_F[m] + " \u09ae\u09be\u09b8\u09c7\u09b0 \u099a\u09be\u0981\u09a6\u09be \u09a6\u09c7\u09b0\u09bf\u09a4\u09c7 \u09b9\u0993\u09af\u09bc\u09be\u09af\u09bc \u099c\u09b0\u09bf\u09ae\u09be\u09a8\u09be " + tk(Math.round(sr * 200)) + "\u0964 \u0985\u09cd\u09af\u09be\u09aa\u09c7 \"\u099f\u09be\u0995\u09be \u099c\u09ae\u09be \u09a6\u09bf\u09a8\" \u09a5\u09c7\u0995\u09c7 \u09aa\u09b0\u09bf\u09b6\u09cb\u09a7 \u0995\u09b0\u09a4\u09c7 \u09aa\u09be\u09b0\u09ac\u09c7\u09a8\u0964", u: "pay", k: "due" }, u.username);
       });
       return { added: added };
@@ -676,23 +697,23 @@ function adminAction(q, u) {
       const sh = sheet("Contributions"), v = sh.getRange(2, 1, Math.max(sh.getLastRow() - 1, 1), 1).getDisplayValues();
       const m = Number(q.month); if (!(m >= 0 && m < 12)) throw new Error("\u09ae\u09be\u09b8 \u09b8\u09a0\u09bf\u0995 \u09a8\u09af\u09bc");
       for (let i = 0; i < v.length; i++) if (String(v[i][0]).trim() === String(q.member).trim()) {
-        const amt = Number(q.amount) || 0; sh.getRange(i + 2, 3 + m).setValue(amt ? amt : ""); return {};
+        const amt = money(q.amount, true); sh.getRange(i + 2, 3 + m).setValue(amt ? amt : ""); return {};
       }
       throw new Error("\u09b8\u09a6\u09b8\u09cd\u09af \u09aa\u09be\u0993\u09af\u09bc\u09be \u09af\u09be\u09af\u09bc\u09a8\u09bf");
     }
 
-    case "fine_add": sheet("Fines").appendRow([String(q.member), Number(q.amount) || 0, q.status === "paid" ? "paid" : "due", monthLabel(q.month)]); return {};
+    case "fine_add": { if (!memberExists(q.member)) throw new Error("\u09b8\u09a6\u09b8\u09cd\u09af \u09aa\u09be\u0993\u09af\u09bc\u09be \u09af\u09be\u09af\u09bc\u09a8\u09bf"); sheet("Fines").appendRow([String(q.member), money(q.amount), q.status === "paid" ? "paid" : "due", monthLabel(q.month), newId2("F")]); return {}; }
     case "fine_edit": {
       const sh = sheet("Fines"), r = checkRow(sh, q.row, q.key);
-      sh.getRange(r, 1, 1, 4).setValues([[String(q.member), Number(q.amount) || 0, q.status === "paid" ? "paid" : "due", monthLabel(q.month)]]);
+      sh.getRange(r, 1, 1, 4).setValues([[String(q.member), money(q.amount), q.status === "paid" ? "paid" : "due", monthLabel(q.month)]]);
       return {};
     }
     case "fine_del": { const sh = sheet("Fines"); sh.deleteRow(checkRow(sh, q.row, q.key)); return {}; }
 
-    case "inv_add": sheet("Investments").appendRow([String(q.sector), Number(q.amount) || 0, String(q.date || ""), Number(q.current) || 0, String(q.note || "")]); return {};
+    case "inv_add": sheet("Investments").appendRow([String(q.sector), money(q.amount), String(q.date || ""), money(q.current, true), String(q.note || ""), newId2("I")]); return {};
     case "inv_edit": {
       const sh = sheet("Investments"), r = checkRow(sh, q.row, q.key);
-      sh.getRange(r, 1, 1, 5).setValues([[String(q.sector), Number(q.amount) || 0, String(q.date || ""), Number(q.current) || 0, String(q.note || "")]]);
+      sh.getRange(r, 1, 1, 5).setValues([[String(q.sector), money(q.amount), String(q.date || ""), money(q.current, true), String(q.note || "")]]);
       return {};
     }
     case "inv_del": { const sh = sheet("Investments"); sh.deleteRow(checkRow(sh, q.row, q.key)); return {}; }
@@ -928,3 +949,75 @@ function payAction(q, u) {
  *  function weeklyBackup() { bkRun(); }
  */
 function setup() { Logger.log("\u09a0\u09bf\u0995 \u0986\u099b\u09c7: " + SS.getName() + " \u2013 Users \u09b6\u09bf\u099f: " + (SS.getSheetByName("Users") ? "\u0986\u099b\u09c7" : "\u09a8\u09c7\u0987")); }
+
+
+/* ---------- সংস্করণ 1A: সাহায্যকারী ফাংশন ---------- */
+function money(x, allowZero) {   // টাকা: সংখ্যা, ঋণাত্মক নয়
+  const n = Math.round(Number(x));
+  if (!isFinite(n) || n < 0 || (!allowZero && n === 0)) throw new Error("টাকার পরিমাণ সঠিক নয় (০-এর বেশি লিখুন)");
+  return n;
+}
+function newId2(p) { return p + Date.now().toString(36).toUpperCase() + Utilities.getUuid().replace(/-/g, "").slice(0, 4).toUpperCase(); }
+
+// MemberIDs শিট: A আইডি | B বর্তমান নাম | C আগের নাম (; দিয়ে) | D যোগ হয়েছে
+const MID_ALIAS = { "প্রিন্স জাহিদ": "জাহিদ হাসান" };   // একই ব্যক্তি (সিয়াম নিশ্চিত করেছেন, ১৮-১১-২০২৬)
+function midSheet() { return mkSheet("MemberIDs", ["আইডি", "বর্তমান নাম", "আগের নাম", "যোগ হয়েছে"]); }
+function midRows() { const sh = midSheet(); return sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 4).getDisplayValues() : []; }
+function midFind(v, name) {
+  name = String(name).trim();
+  for (let i = 0; i < v.length; i++) {
+    if (String(v[i][1]).trim() === name) return i;
+    if (String(v[i][2]).split(";").map(function (x) { return x.trim(); }).indexOf(name) >= 0) return i;
+  }
+  return -1;
+}
+function midNext(v) { let mx = 0; v.forEach(function (r) { const n = Number(String(r[0]).replace(/\D/g, "")) || 0; if (n > mx) mx = n; }); return "M-" + String(mx + 1).padStart(2, "0"); }
+function midAssign(name, old) {
+  name = String(name || "").trim(); if (!name || name.charAt(0) === "※") return;
+  const sh = midSheet(), v = midRows();
+  if (midFind(v, name) >= 0 || (old && midFind(v, old) >= 0)) return;
+  const r = sh.getLastRow() + 1; sh.getRange(r, 1, 1, 4).setNumberFormat("@");
+  sh.getRange(r, 1, 1, 4).setValues([[midNext(v), name, old || "", now()]]);
+}
+function midRename(old, name) {
+  const sh = midSheet(), v = midRows(), i = midFind(v, old); if (i < 0) { midAssign(name); return; }
+  const al = String(v[i][2] || "").split(";").map(function (x) { return x.trim(); }).filter(Boolean);
+  if (al.indexOf(old) < 0) al.push(old);
+  sh.getRange(i + 2, 2, 1, 2).setValues([[name, al.join("; ")]]);
+}
+function midSync() {   // পুরোনো বছর থেকে শুরু করে সবাইকে আইডি দেওয়া (যাঁদের নেই)
+  const names = [];
+  archYears().forEach(function (y) { rows("Contributions_" + y).forEach(function (r) { names.push(String(r[0]).trim()); }); });
+  rows("Contributions").forEach(function (r) { names.push(String(r[0]).trim()); });
+  names.forEach(function (n) {
+    if (!n || n.charAt(0) === "※") return;
+    const cur = MID_ALIAS[n] || n;
+    if (cur !== n) { midAssign(cur, n); const v = midRows(), i = midFind(v, cur); if (i >= 0 && midFind(v, n) < 0) { const sh = midSheet(); sh.getRange(i + 2, 3).setValue([String(v[i][2] || ""), n].filter(Boolean).join("; ")); } }
+    else midAssign(n);
+  });
+}
+function idCol(name, col, p) {   // আইডি কলাম যোগ (যে সারিতে নেই)
+  const sh = SS.getSheetByName(name); if (!sh) return;
+  if (!String(sh.getRange(1, col).getDisplayValue()).trim()) sh.getRange(1, col).setValue("আইডি");
+  if (sh.getLastRow() < 2) return;
+  const n = sh.getLastRow() - 1, a = sh.getRange(2, 1, n, 1).getDisplayValues(), rg = sh.getRange(2, col, n, 1), v = rg.getDisplayValues();
+  let ch = false; v.forEach(function (r, i) { if (String(a[i][0]).trim() && !String(r[0]).trim()) { r[0] = newId2(p); ch = true; } });
+  if (ch) { rg.setNumberFormat("@"); rg.setValues(v); }
+}
+function migrate1a() {   // প্রথম অনুরোধে একবার চলে; আবার চালালেও ক্ষতি নেই
+  const p = props(); if (p.getProperty("mig") === "1a") return;
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    if (p.getProperty("mig") === "1a") return;
+    const us = SS.getSheetByName("Users");
+    if (us) {
+      us.getRange(1, 7).setValue("পাসওয়ার্ড বদলানো বাকি (1 = হ্যাঁ)");
+      if (us.getLastRow() > 1) { const rg = us.getRange(2, 7, us.getLastRow() - 1, 1), v = rg.getValues(); v.forEach(function (r) { if (String(r[0]).trim()) r[0] = "1"; }); rg.setValues(v); }
+    }
+    midSync();
+    idCol("Fines", 5, "F"); idCol("Investments", 6, "I");
+    p.setProperty("mig", "1a");
+    try { logAct({ name: "সিস্টেম", role: "system" }, { action: "migrate_1a" }); } catch (e) {}
+    dropRS();
+  } finally { lock.releaseLock(); }
+}
