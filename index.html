@@ -429,7 +429,7 @@ button.bz{opacity:.6;pointer-events:none}
 .bkm small{display:block;font-size:11.5px;color:var(--m);margin-top:1px}
 .bkb{display:flex;align-items:center;gap:8px;margin-top:7px}.bkb i{display:block;height:6px;border-radius:4px;background:linear-gradient(90deg,#3B6FD1,#8FB4FF);flex:none;max-width:calc(100% - 44px);transform-origin:0 50%;animation:fillx .8s cubic-bezier(.16,1,.3,1) both}.neg .bkb i{background:linear-gradient(90deg,#C0392B,#FF9A90)}.bkb s{text-decoration:none;font-size:11px;color:var(--m);white-space:nowrap}
 .bkt2{display:flex;align-items:center;gap:12px;margin:8px 10px 10px;padding:14px;border-radius:14px;background:linear-gradient(135deg,rgba(212,165,55,.20),rgba(212,165,55,.06));border:1px solid rgba(212,165,55,.55);box-shadow:0 8px 22px -12px rgba(212,165,55,.6)}.bkt2 .bki{background:linear-gradient(135deg,#F3D27A,#C8961F)}.bkt2 b{color:#F0CD6E;font-size:15.5px}.bkt2 strong{font-size:19px;color:#fff;white-space:nowrap}
-.rbM svg{filter:drop-shadow(0 0 3px rgba(120,170,255,.45))}.rtip.m{background:linear-gradient(135deg,#B48CFF,#6A2FD8)}.rbm{color:#A9C8FF!important}
+.rbM svg{filter:drop-shadow(0 0 3px rgba(120,170,255,.45))}.rtip.m{background:linear-gradient(135deg,#B48CFF,#6A2FD8)}
 .atabs.a3{grid-template-columns:repeat(3,minmax(0,1fr))}.atabs.a2{grid-template-columns:repeat(2,minmax(0,1fr))}.atabs.a5{grid-template-columns:repeat(5,minmax(0,1fr))}.atabs.a5 button{font-size:11px}
 .apw{padding:6px 0 0 44px;font-size:12.5px;color:var(--m);display:flex;align-items:center;gap:6px;flex-wrap:wrap}.apw code{background:#1A2A55;color:#F0CD6E;border-radius:6px;padding:2px 8px;font-size:13px;letter-spacing:.5px}.apw .eye{width:30px;height:30px;font-size:13px}
 .pwr{position:relative}.pwr input{padding-right:52px!important}.pwr .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px}
@@ -939,7 +939,7 @@ act("poll_edit",{id:ev.id,question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r")
 function pollAdd(){const q=fv("v_q");if(!q)return toast(t("vq")+"?",1);const opts=VK=="yn"?[t("vyes"),t("vno")]:fv("v_o").split("\n").map(x=>x.trim()).filter(Boolean);if(opts.length<2)return toast(t("vopts")+"?",1);act("poll_add",{question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r"),end:dmy(fv("v_e"))})}
 function pollClose(id,open){act("poll_close",{id,open})}
 function pollDel(id){if(confirm(t("vq2")))act("poll_del",{id},t("delm"))}
-const APPV="98";/* রিলিজের সময় sw.js-এর C-র সঙ্গে মিলিয়ে বাড়াতে হবে */const verTxt=()=>t("ver")+" · v"+(L=="bn"?bnD(APPV):APPV);
+const APPV="99";/* রিলিজের সময় sw.js-এর C-র সঙ্গে মিলিয়ে বাড়াতে হবে */const verTxt=()=>t("ver")+" · v"+(L=="bn"?bnD(APPV):APPV);
 (function(){try{const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),sa=navigator.standalone||matchMedia("(display-mode: standalone)").matches;if(!ios||sa)return;const f=()=>{const e=document.getElementById("ioshint");if(!e)return;e.innerHTML=L=="en"?"📱 To install on iPhone: click <b>Share ⬆️</b> below → <b>Add to Home Screen</b>":"📱 আইফোনে অ্যাপ বসাতে নিচের <b>Share ⬆️</b> → <b>Add to Home Screen</b> ক্লিক করুন";e.classList.add("on")};document.readyState=="loading"?document.addEventListener("DOMContentLoaded",f):f()}catch(e){}})();let LGB=0;
 async function logoHome(src){if(TOUR)tourEnd();hsClose();vpClose();const pv=document.getElementById("pv");if(pv&&pv.classList.contains("on"))closePV();
 if(tab!="home"){go("home");return}if(src=="side"){mn(0);return}
