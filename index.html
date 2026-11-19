@@ -420,6 +420,7 @@ button.bz{opacity:.6;pointer-events:none}
 .rv{background:rgba(212,165,55,.12);border:1px solid rgba(212,165,55,.55);color:#F0CD6E}
 #vpop{position:fixed;inset:0;z-index:55;background:rgba(3,8,24,.72);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .25s}#vpop.on{opacity:1}
 .vpc{width:100%;max-width:360px;background:linear-gradient(180deg,#16285A,#0F1D45);border:1px solid rgba(212,165,55,.55);border-radius:20px;padding:18px 16px 12px;box-shadow:0 20px 50px #000a;transform:translateY(14px) scale(.97);transition:transform .35s cubic-bezier(.16,1,.3,1)}#vpop.on .vpc{transform:none}
+#uq{position:fixed;inset:0;z-index:10000;background:rgba(3,8,24,.74);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .2s;backdrop-filter:blur(2px)}#uq.on{opacity:1}#uq.on .vpc{transform:none}.uqm{margin:10px 0 16px;color:#fff;font-size:15.5px;line-height:1.6;white-space:pre-line;word-break:break-word;max-height:55vh;overflow:auto}.uqi{display:block;width:100%;box-sizing:border-box;font:inherit;font-size:15px;padding:11px 12px;border-radius:12px;border:1.5px solid rgba(212,165,55,.45);background:#0B1636;color:#fff;outline:0;margin:-4px 0 16px}.uqi:focus{border-color:#F0CD6E}.uqf{display:flex;gap:10px;padding-bottom:6px}.uqf .b{flex:1;padding:12px;font-size:15px;font-weight:700;border-radius:12px}.uqf .b.uqn{background:transparent;color:#C9D4EE;border:1px solid rgba(201,212,238,.35)}.uqf .b.uqy{background:linear-gradient(135deg,#F3D27A,#C8961F);color:#2A1C00;border:0}.uqf .b.uqd{background:linear-gradient(135deg,#E5605A,#B8322E);color:#fff;border:0}
 .vpt{font-size:12.5px;font-weight:700;color:#F0CD6E;letter-spacing:.4px}.vpq{display:block;font-size:17px;line-height:1.45;margin:8px 0 4px;color:#fff}.vpd{margin:0 0 6px;color:var(--m);font-size:13.5px;line-height:1.55}.vpm{display:block;color:var(--m);font-size:12px}.vpc .vbtns{padding:14px 0 8px}.vpf{display:flex;justify-content:space-between;gap:8px;padding-top:4px}
 .rbg{display:inline-flex;vertical-align:-3px;margin-left:5px;cursor:pointer;-webkit-tap-highlight-color:transparent}.rbg svg{width:17px;height:17px}.rbA svg{filter:drop-shadow(0 0 3px rgba(240,205,110,.55))}.rbC svg{filter:drop-shadow(0 0 3px rgba(190,140,255,.5))}
 .rtip{position:fixed;z-index:70;padding:6px 12px;border-radius:10px;background:#1E3A78;color:#fff;font-size:12.5px;font-weight:700;box-shadow:0 8px 20px #0008;opacity:0;transform:translateY(4px);transition:.2s;pointer-events:none}.rtip.a{background:linear-gradient(135deg,#F3D27A,#C8961F);color:#2A1C00}.rtip.on{opacity:1;transform:none}
@@ -681,13 +682,13 @@ ${fl(t("tr_why"),`<input id="tr_w" autocomplete="off">`)}
 <div class="fb"><button class="b p" onclick="trGo()">${t("tr_go")}</button></div></div>
 <div class="ch" style="padding-top:6px">📜 <span style="flex:1">${t("tr_list")}</span></div>${L.length?[...L].reverse().map(x=>trRow(x,null,last&&last.id==x.id)).join(""):`<div class="ems">${t("tr_none")}</div>`}`}
 let TRF={};
-function trGo(){const from=fv("tr_f"),nw=!!TRF.nw,to=nw?fv("tr_tn"):fv("tr_t"),k=Math.round((+fv("tr_k")||0)*2)/2,m=+fv("tr_m"),why=fv("tr_w");
+async function trGo(){const from=fv("tr_f"),nw=!!TRF.nw,to=nw?fv("tr_tn"):fv("tr_t"),k=Math.round((+fv("tr_k")||0)*2)/2,m=+fv("tr_m"),why=fv("tr_w");
 if(!from||!to||!(k>0)||why.length<3)return toast(t("tr_need"),1);
 const x=D.members.find(q=>q[0]==from);if(!x)return;let mn=x[1];for(let i=m;i<12;i++)mn=Math.min(mn,x[5]?x[5][i]:x[1]);if(k>mn)return toast(t("tr_sk"),1);
 const w=[from+" → "+to+" · "+bnD(k)+" "+t("tr_n")+" · "+mName(m)+" "+t("tr_fr")];if(Math.abs(x[1]-k)<1e-9)w.push(t("tr_all"));if(x[2].slice(m).some(v=>v>0))w.push(t("tr_paid").replace("{m}",mName(m)));if(nw)w.push(t("tr_newu"));
-if(!confirm(t("tr_cf").replace("{a}",w.join("\n\n"))))return;
+if(!await ask(t("tr_cf").replace("{a}",w.join("\n\n"))))return;
 act("tr_add",{from,to,isNew:nw,shares:k,month:m,reason:why},t("tr_ok")).then(ok=>{if(ok)TRF={}})}
-function trVoid(id){const why=askWhy();if(why)act("tr_void",{id,reason:why},t("vdok"))}
+async function trVoid(id){const why=await askWhy();if(why)act("tr_void",{id,reason:why},t("vdok"))}
 const SPR_D=[{r:4000,f:"2025-12",t:"2025-12"},{r:1000,f:"2026-03",t:"2026-03"},{r:4000,f:"2026-06",t:"2026-06"},{r:1000,f:"2026-09",t:"2026-09"},{r:4000,f:"2026-12",t:"2026-12"},{r:3000,f:"2027-01",t:"2027-12"}],spR=(y,m)=>{const k=y+"-"+String(m+1).padStart(2,"0");let r=0;(SET.spr||SPR_D).forEach(x=>{if(k>=x.f&&k<=x.t)r=+x.r||0});return r},isMS=x=>String(x.src||"").indexOf("মাসিক ")==0,tpd=(x,i)=>Math.round(x[2][i]*1000)+((x.sp||[])[i]||0),tex=(x,i)=>x.ex?x.ex[i]:Math.round(x[5][i]*1000); function fineR(y){const r=(SET.fr||{})[y];return r&&(r.k=="n"||r.k=="p")?r:(y>=2027?{k:"p",v:10}:{k:"n",v:200})} const frTxt=r=>t(r.k=="p"?"fr_p":"fr_n").replace("{v}",bnD(r.v)); function fineAmt(x,m){const r=fineR(curY());return r.k=="p"?Math.round(Math.max(0,tex(x,m)-tpd(x,m))*r.v/100):Math.round(x[5][m]*r.v)} function shM(n,b,y,i){let s=b;(D.tr||[]).forEach(x=>{if(x.st||x.y!=y||fm(x.mon)<=i)return;if(x.from==n)s+=x.k;if(x.to==n)s-=x.k});return Math.max(0,s)}
 function trOf(n){return(D.tr||[]).filter(x=>!x.st&&(x.from==n||x.to==n))}
 function trNet(n){return trOf(n).reduce((a,x)=>a+(x.to==n?x.dep:-x.dep),0)}
@@ -791,7 +792,7 @@ function mn(o){if(o)fit();document.getElementById("side").classList.toggle("on",
 function go(x){if(x=="pay"&&(tab!="pay"||PTN))PT=PTN||"w";PTN=0;if(x!=tab)try{history.pushState({t:x},"")}catch(e){}tab=x;mn(0);render();scrollTo(0,0)}
 try{history.replaceState({t:"home"},"")}catch(e){}
 addEventListener("popstate",e=>{const pv=document.getElementById("pv"),sd=document.getElementById("side"),keep=()=>{try{history.pushState({t:tab},"")}catch(e){}};
-if(TOUR){tourEnd();keep();return}if(document.getElementById("hs")){hsClose();keep();return}if(document.getElementById("phm")){phClose();keep();return}if(document.getElementById("vpop")){vpLater();keep();return}if(pv&&pv.classList.contains("on")){closePV();keep();return}
+if(document.getElementById("uq")){const q=document.getElementById("uq");(q.querySelector("#uqn")||q.querySelector("#uqy")).click();keep();return}if(TOUR){tourEnd();keep();return}if(document.getElementById("hs")){hsClose();keep();return}if(document.getElementById("phm")){phClose();keep();return}if(document.getElementById("vpop")){vpLater();keep();return}if(pv&&pv.classList.contains("on")){closePV();keep();return}
 if(sd&&sd.classList.contains("on")){mn(0);keep();return}
 if(document.body.classList.contains("lo"))return;
 tab=(e.state&&e.state.t)||"home";render();scrollTo(0,0)});
@@ -861,19 +862,19 @@ function saveNotice(){const p={date:fv("n_d"),title:fv("n_t"),body:fv("n_b")};if
  if(EDIT&&EDIT.type=="n"){const x=D.notices.find(q=>q[3]==EDIT.row);act("notice_edit",Object.assign(p,{row:EDIT.row,key:x?x[1]:""}))}else act("notice_add",p)}
 function saveRule(){const p={title:fv("r_t"),body:fv("r_b")};if(!p.title)return toast(t("rtitle")+"?",1);
  if(EDIT&&EDIT.type=="r"){const x=D.rules.find(q=>q[2]==EDIT.row);act("rule_edit",Object.assign(p,{row:EDIT.row,key:x?x[0]:""}))}else act("rule_add",p)}
-function delRule(row){const x=D.rules.find(q=>q[2]==row);if(x&&confirm(t("cdel")))act("rule_del",{row,key:x[0]},t("delm"))}
-function delNotice(row){const x=D.notices.find(q=>q[3]==row);if(x&&confirm(t("cdel")))act("notice_del",{row,key:x[1]},t("delm"))}
+async function delRule(row){const x=D.rules.find(q=>q[2]==row);if(x&&await ask(t("cdel"),1))act("rule_del",{row,key:x[0]},t("delm"))}
+async function delNotice(row){const x=D.notices.find(q=>q[3]==row);if(x&&await ask(t("cdel"),1))act("notice_del",{row,key:x[1]},t("delm"))}
 function saveFine(){const p={member:fv("f_m"),month:fv("f_mo"),amount:+fv("f_a")||0,status:fv("f_s")};if(!p.member||!p.amount)return toast(t("amtt")+"?",1);
  if(EDIT&&EDIT.type=="f"){const x=D.fines.find(q=>q[4]==EDIT.row);act("fine_edit",Object.assign(p,{row:EDIT.row,key:x?x[0]:""}))}else act("fine_add",p)}
-function askWhy(){const r=prompt(t("vdq"));if(r==null)return null;const s=String(r).trim();if(s.length<3){toast(t("vdshort"),1);return null}return s}
-function delFine(row){const x=D.fines.find(q=>q[4]==row);if(!x)return;const why=askWhy();if(why)act("fine_void",{row,key:x[0],reason:why},t("vdok"))}
-function invRet(row,undo){const x=D.inv.find(q=>q[5]==row);if(!x)return;if(undo){if(confirm(t("iundoq")))act("inv_ret",{row,key:x[0],undo:1});return}const d=prompt(t("iretq"),today());if(d==null)return;act("inv_ret",{row,key:x[0],date:d.trim()},t("iretok"))}
+async function askWhy(){const r=await askTxt(t("vdq"));if(r==null)return null;const s=String(r).trim();if(s.length<3){toast(t("vdshort"),1);return null}return s}
+async function delFine(row){const x=D.fines.find(q=>q[4]==row);if(!x)return;const why=await askWhy();if(why)act("fine_void",{row,key:x[0],reason:why},t("vdok"))}
+async function invRet(row,undo){const x=D.inv.find(q=>q[5]==row);if(!x)return;if(undo){if(await ask(t("iundoq")))act("inv_ret",{row,key:x[0],undo:1});return}const d=await askTxt(t("iretq"),today());if(d==null)return;act("inv_ret",{row,key:x[0],date:d.trim()},t("iretok"))}
 function saveInv(){const p={sector:fv("i_s"),amount:+fv("i_a")||0,date:fv("i_d"),current:+fv("i_c")||0,note:fv("i_n"),owner:fv("i_o"),land:fv("i_l"),until:fv("i_u")};if(!p.sector)return toast(t("isec")+"?",1);
  if(EDIT&&EDIT.type=="i"){const x=D.inv.find(q=>q[5]==EDIT.row);act("inv_edit",Object.assign(p,{row:EDIT.row,key:x?x[0]:""}))}else act("inv_add",p)}
-function delInv(row){const x=D.inv.find(q=>q[5]==row);if(!x)return;const why=askWhy();if(why)act("inv_void",{row,key:x[0],reason:why},t("vdok"))}
-function setActive(u,on){if(!on&&!confirm("@"+u+(L=="bn"?" — অ্যাকাউন্ট বন্ধ করবেন? উনি আর লগইন করতে পারবেন না।":" — disable this account? They will not be able to log in.")))return;act("user_active",{username:u,active:on})}
-function setCashier(u,n,ca){if(confirm(n+t(ca?"rmcq":"mkcq")))act("set_cashier",{username:u})}
-function setMod(u,n,on){if(confirm(n+t(on?"mkmq":"rmmq")))act("set_moderator",{username:u,on})}
+async function delInv(row){const x=D.inv.find(q=>q[5]==row);if(!x)return;const why=await askWhy();if(why)act("inv_void",{row,key:x[0],reason:why},t("vdok"))}
+async function setActive(u,on){if(!on&&!await ask("@"+u+(L=="bn"?" — অ্যাকাউন্ট বন্ধ করবেন? উনি আর লগইন করতে পারবেন না।":" — disable this account? They will not be able to log in."),1))return;act("user_active",{username:u,active:on})}
+async function setCashier(u,n,ca){if(await ask(n+t(ca?"rmcq":"mkcq"),1))act("set_cashier",{username:u})}
+async function setMod(u,n,on){if(await ask(n+t(on?"mkmq":"rmmq"),1))act("set_moderator",{username:u,on})}
 function cashToggle(){act("cash_toggle",{on:!CASHON})}
 let LF="all",LN=30,LT="in",VK="yn";
 function own(name){const m=D.members.find(x=>x[0]==name);if(!m||m[3])return null;const TS=D.members.filter(x=>!x[3]).reduce((a,x)=>a+x[1],0);if(!TS)return null;const k=calc(),p=m[1]/TS,pf=k.s.profit+D.led.filter(x=>x.type=="in"&&/লাভ/.test(x.cat)).reduce((a,x)=>a+x.amt,0);return{pc:(p*100).toFixed(2),val:k.tot*p,per:k.tot/TS,pf:pf*p,sh:m[1],TS}}
@@ -881,8 +882,8 @@ function ownCard(name){const o=own(name);if(!o)return"";return`<section class="c
 const LOC=k=>k=="bank"?t("lbank"):k=="hand"?t("lhand"):"";
 function ledRow(x,adm){const ic=x.type=="in"?"⬇️":x.type=="out"?"⬆️":"🔁",cls=x.type=="in"?"g":x.type=="out"?"r":"",sg=x.type=="in"?"+":x.type=="out"?"−":"";
 return`<div class="fr r2 t_${x.type}"><u class="av sm">${ic}</u><div class="frm"><b>${esc(x.cat||t(x.type=="in"?"lin":x.type=="out"?"lout":"ltr"))}</b><small>${esc(x.date)} · ${x.type=="tr"?LOC(x.from)+" → "+LOC(x.to):x.type=="in"?"→ "+LOC(x.to):LOC(x.from)+" →"}${x.note?" · "+esc(x.note):""}${x.inv?(()=>{const v=D.inv.find(q=>q[10]==x.inv);return v?" · 📈 "+esc(v[0]):""})():""}</small></div><div class="frr"><b class="${cls}">${sg}${f(x.amt)}</b>${adm?`<button class="tb" onclick="ledDel('${esc(x.id)}')" aria-label="${t("vd")}" title="${t("vd")}">↩️</button>`:""}</div></div>`}
-function ledDel(id){const why=askWhy();if(why)act("led_void",{id,reason:why},t("vdok"))}
-function spcDel(id){const why=askWhy();if(why)act("spc_void",{id,reason:why},t("vdok"))}
+async function ledDel(id){const why=await askWhy();if(why)act("led_void",{id,reason:why},t("vdok"))}
+async function spcDel(id){const why=await askWhy();if(why)act("spc_void",{id,reason:why},t("vdok"))}
 function spcAdd(){const p={member:fv("sp_m"),amount:+fv("sp_a")||0,month:fv("sp_mo"),note:fv("sp_n"),date:dmy(fv("sp_d"))};if(p.amount<=0)return toast(t("e_amt"),1);act("spc_add",p)}
 let JN=20,SPN=6;
 function jrnPage(){const A=D.acc,cd=(ic,ti,b)=>`<section class="card"><div class="ch">${ic} <span style="flex:1">${ti}</span></div><div class="w">${b}</div></section>`;
@@ -897,13 +898,13 @@ function ledPage(){const k=calc(),cd=(ic,ti,b)=>`<section class="card"><div clas
 const where=`<div class="m4"><div><span>💼 ${t("lhand")}</span><b>${f(k.hand)}</b></div><div><span>🏛️ ${t("lbank")}</span><b>${f(k.bank)}</b></div><div><span>${t("lyin")}</span><b class="g">+${f(k.li)}</b></div><div><span>${t("lyout")}</span><b class="r">−${f(k.lo)}</b></div></div><div class="frt"><span>${t("lcash")}</span><b>${f(k.cash)}</b></div><p class="hint2" style="padding:10px 14px 12px">ℹ️ ${t("lhd")}</p>`;
 const L2=D.led.filter(x=>LF=="all"||x.type==LF),fb=sgf([["all",t("all2"),D.led.length],["in",t("lin"),D.led.filter(x=>x.type=="in").length],["out",t("lout"),D.led.filter(x=>x.type=="out").length],["tr",t("ltr"),D.led.filter(x=>x.type=="tr").length]],LF,"LF='$K';LN=30;render(1)");
 return cd("💰",t("lwhere"),where)+cd("📒",t("ledm"),fb+(L2.length?L2.slice(0,LN).map(x=>ledRow(x,isAdm())).join("")+(L2.length>LN?`<div class="pyc" style="justify-content:center;padding:10px"><button class="qb" onclick="LN+=30;render(1)">${L=="bn"?"আরও দেখুন":"Show more"} (${L2.length-LN})</button></div>`:""):`<div class="ems">${t("lnone")}</div>`))}
-function ledAdd(){const k=calc(),p={type:LT,date:dmy(fv("l_d")),cat:fv("l_c"),amount:+fv("l_a")||0,note:fv("l_n"),from:LT=="out"?"hand":"",to:LT=="in"?"hand":"",inv:fv("l_i")};if(p.amount<=0)return toast(t("e_amt"),1);
- if(LT!="in"){const bal=p.from=="bank"?k.bank:k.hand;if(p.amount>bal&&!confirm(t("lnob")+" ("+f(bal)+")"))return}act("led_add",p)}
+async function ledAdd(){const k=calc(),p={type:LT,date:dmy(fv("l_d")),cat:fv("l_c"),amount:+fv("l_a")||0,note:fv("l_n"),from:LT=="out"?"hand":"",to:LT=="in"?"hand":"",inv:fv("l_i")};if(p.amount<=0)return toast(t("e_amt"),1);
+ if(LT!="in"){const bal=p.from=="bank"?k.bank:k.hand;if(p.amount>bal&&!await ask(t("lnob")+" ("+f(bal)+")"))return}act("led_add",p)}
 const elig=()=>D.members.filter(x=>!x[3]).length;
 const pOpen=p=>{if(String(p.st).trim()=="বন্ধ")return false;const m=String(p.end||"").match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);return!(m&&new Date()>new Date(+m[3],+m[2]-1,+m[1],23,59,59))};
 const canVote=()=>!!(USER&&D.members.some(x=>x[0]==USER.name&&!x[3]));
 function unvN(){if(!canVote())return 0;return D.polls.filter(p=>pOpen(p)&&D.mv[p.id]===undefined).length}
-function vote(id,c){if(confirm(t("vcq")))act("vote",{id,choice:c},t("vok"))}
+async function vote(id,c){if(await ask(t("vcq")))act("vote",{id,choice:c},t("vok"))}
 function pollRes(p){const cn=D.vc[p.id]||[],tot=p.opts.reduce((a,_,i)=>a+(cn[i]||0),0),E=elig(),need=p.rule==75?Math.ceil(E*.75):Math.floor(E/2)+1,top=p.opts.map((_,i)=>cn[i]||0),mx=Math.max(...top,0),wi=top.indexOf(mx),yn=p.opts.length==2&&["হ্যাঁ","Yes"].includes(p.opts[0]),passN=yn?(cn[0]||0):mx,pass=passN>=need;
 return`<div class="vres">${p.opts.map((o,i)=>{const v=cn[i]||0,pc=E?v/E*100:0;return`<div class="vbar${(yn?i==0:i==wi)&&v?" vtop":""}"><div class="vbl"><span>${esc(o)}</span><b>${bnD(v)} · ${bnD(pc.toFixed(0))}%</b></div><div class="mtb"><i style="width:${pc.toFixed(1)}%"></i></div></div>`}).join("")}<p class="vsum"><span>${t("vtotal").replace("{a}",bnD(tot)).replace("{b}",bnD(E))}</span><b class="${pass?"g":"r"}">${pass?t("vpass"):(pOpen(p)?t("vneed").replace("{n}",bnD(need)):t("vfail"))}</b></p></div>`}
 let VF="",VPD=new Set();
@@ -929,17 +930,17 @@ const d=document.createElement("div");d.id="vpop";d.innerHTML=`<div class="vpc">
 d.onclick=e=>{if(e.target===d)vpLater()};document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add("on"))}
 function vpClose(){const d=document.getElementById("vpop");if(d)d.remove()}
 function vpLater(){D.polls.filter(q=>pOpen(q)&&D.mv[q.id]===undefined).forEach(q=>VPD.add(q.id));vpClose()}
-function pollSave(){const ev=EDIT&&EDIT.type=="v"?D.polls.find(x=>x.id==EDIT.row):null;if(!ev)return pollAdd();
+async function pollSave(){const ev=EDIT&&EDIT.type=="v"?D.polls.find(x=>x.id==EDIT.row):null;if(!ev)return pollAdd();
 const q=fv("v_q");if(!q)return toast(t("vq")+"?",1);const opts=fv("v_o").split("\n").map(x=>x.trim().replace(/\|/g,"/")).filter(Boolean).slice(0,8);if(opts.length<2)return toast(t("vopts")+"?",1);
 const old=ev.opts,used=new Set(),map=opts.map(o=>{const k=old.findIndex((x,j)=>x==o&&!used.has(j));if(k>=0)used.add(k);return k});
 map.forEach((m,i)=>{if(m<0&&i<old.length&&!used.has(i)&&!opts.includes(old[i])){map[i]=i;used.add(i)}});
 const tot=pTot(ev),vs=D.votes.filter(v=>v[0]==ev.id),lost=vs.filter(v=>!used.has(+v[2])).length;
-if(tot&&!confirm(t("ved_w").replace("{n}",bnD(tot))+(lost?"\n"+t("ved_l").replace("{n}",bnD(lost)):"")))return;
+if(tot&&!await ask(t("ved_w").replace("{n}",bnD(tot))+(lost?"\n"+t("ved_l").replace("{n}",bnD(lost)):"")))return;
 act("poll_edit",{id:ev.id,question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r"),end:dmy(fv("v_e")),map},t("vupd"))}
 function pollAdd(){const q=fv("v_q");if(!q)return toast(t("vq")+"?",1);const opts=VK=="yn"?[t("vyes"),t("vno")]:fv("v_o").split("\n").map(x=>x.trim()).filter(Boolean);if(opts.length<2)return toast(t("vopts")+"?",1);act("poll_add",{question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r"),end:dmy(fv("v_e"))})}
 function pollClose(id,open){act("poll_close",{id,open})}
-function pollDel(id){if(confirm(t("vq2")))act("poll_del",{id},t("delm"))}
-const APPV="100";/* রিলিজের সময় sw.js-এর C-র সঙ্গে মিলিয়ে বাড়াতে হবে */const verTxt=()=>t("ver")+" · v"+(L=="bn"?bnD(APPV):APPV);
+async function pollDel(id){if(await ask(t("vq2"),1))act("poll_del",{id},t("delm"))}
+const APPV="101";/* রিলিজের সময় sw.js-এর C-র সঙ্গে মিলিয়ে বাড়াতে হবে */const verTxt=()=>t("ver")+" · v"+(L=="bn"?bnD(APPV):APPV);
 (function(){try{const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),sa=navigator.standalone||matchMedia("(display-mode: standalone)").matches;if(!ios||sa)return;const f=()=>{const e=document.getElementById("ioshint");if(!e)return;e.innerHTML=L=="en"?"📱 To install on iPhone: click <b>Share ⬆️</b> below → <b>Add to Home Screen</b>":"📱 আইফোনে অ্যাপ বসাতে নিচের <b>Share ⬆️</b> → <b>Add to Home Screen</b> ক্লিক করুন";e.classList.add("on")};document.readyState=="loading"?document.addEventListener("DOMContentLoaded",f):f()}catch(e){}})();let LGB=0;
 async function logoHome(src){if(TOUR)tourEnd();hsClose();vpClose();const pv=document.getElementById("pv");if(pv&&pv.classList.contains("on"))closePV();
 if(tab!="home"){go("home");return}if(src=="side"){mn(0);return}
@@ -1077,7 +1078,18 @@ const d=document.createElement("div");d.id="hs";d.innerHTML=`<div class="hsp"><i
 d.onclick=e=>{if(e.target===d)hsDown()};document.body.appendChild(d);hsDrag(d);requestAnimationFrame(()=>d.classList.add("on"));fabSync()}
 function hsClose(){const d=document.getElementById("hs");if(d)d.remove();document.documentElement.classList.remove("hsl");fabSync()}
 /* পপআপ/মেনু/প্যানেল খোলা থাকলে পেছনের পাতা আটকে রাখা ও ব্রাউজারের টেনে-রিফ্রেশ বন্ধ (১৯-১১-২০২৬) */
-function lockSync(){const g=i=>document.getElementById(i),sh=e=>!!e&&getComputedStyle(e).display!="none",on=!!(g("hs")||g("vpop")||g("phm")||g("tf2")||g("iosp")||g("tov")||document.querySelector("#side.on")||sh(g("pv"))||[...document.querySelectorAll(".mnt")].some(sh));document.documentElement.classList.toggle("hsl",on)}
+let UQR=null;
+function uqDone(v){const d=document.getElementById("uq");if(!d)return;d.remove();lockSync();const r=UQR;UQR=null;if(r)r(v)}
+function uqOpen(m,o){if(UQR)uqDone(null);return new Promise(res=>{UQR=res;const bn=L=="bn",d=document.createElement("div");d.id="uq";
+const hd=o.t?(bn?"✏️ লিখুন":"✏️ Please enter"):o.a?(bn?"ℹ️ জানিয়ে রাখি":"ℹ️ Notice"):o.d?(bn?"⚠️ সতর্কতা":"⚠️ Careful"):(bn?"❓ নিশ্চিত করুন":"❓ Please confirm");
+const yl=o.a?(bn?"ঠিক আছে":"OK"):o.t?(bn?"✓ ঠিক আছে":"✓ OK"):(bn?"✓ হ্যাঁ":"✓ Yes");
+d.innerHTML=`<div class="vpc" role="dialog" aria-modal="true"><div class="vpt">${hd}</div>${m?`<p class="uqm">${esc(String(m))}</p>`:'<div style="height:12px"></div>'}${o.t?`<input id="uqi" class="uqi" autocomplete="off" value="${esc(String(o.v==null?"":o.v))}">`:""}<div class="uqf">${o.a?"":`<button class="b uqn" id="uqn">${bn?"বাতিল":"Cancel"}</button>`}<button class="b ${o.d?"uqd":"uqy"}" id="uqy">${yl}</button></div></div>`;
+const no=()=>uqDone(o.t?null:o.a?undefined:false),yes=()=>uqDone(o.t?document.getElementById("uqi").value:o.a?undefined:true);
+d.onclick=e=>{if(e.target===d)no()};document.body.appendChild(d);d.querySelector("#uqy").onclick=yes;const n=d.querySelector("#uqn");if(n)n.onclick=no;
+const i=d.querySelector("#uqi");if(i){i.onkeydown=e=>{if(e.key=="Enter"){e.preventDefault();yes()}else if(e.key=="Escape")no()};setTimeout(()=>{i.focus();i.select()},60)}
+lockSync();requestAnimationFrame(()=>d.classList.add("on"))})}
+const ask=(m,d)=>uqOpen(m,{d:!!d}),askTxt=(m,v)=>uqOpen(m,{t:1,v}),say=m=>uqOpen(m,{a:1});
+function lockSync(){const g=i=>document.getElementById(i),sh=e=>!!e&&getComputedStyle(e).display!="none",on=!!(g("uq")||g("hs")||g("vpop")||g("phm")||g("tf2")||g("iosp")||g("tov")||document.querySelector("#side.on")||sh(g("pv"))||[...document.querySelectorAll(".mnt")].some(sh));document.documentElement.classList.toggle("hsl",on)}
 (()=>{const st=()=>{const mo=new MutationObserver(lockSync);mo.observe(document.body,{childList:true});["side","pv"].forEach(i=>{const e=document.getElementById(i);if(e)mo.observe(e,{attributes:true,attributeFilter:["class","style"]})});document.querySelectorAll(".mnt").forEach(e=>mo.observe(e,{attributes:true,attributeFilter:["class","style"]}));lockSync()};document.body?st():document.addEventListener("DOMContentLoaded",st)})();
 function hsDown(){const d=document.getElementById("hs"),p=d&&d.querySelector(".hsp");if(!p)return hsClose();p.classList.remove("drg");p.style.transition="transform .22s ease-in";p.style.transform="translate3d(0,110%,0)";d.style.transition="opacity .22s";d.style.opacity="0";setTimeout(hsClose,220)}
 function hsDrag(d){document.documentElement.classList.add("hsl");const p=d.querySelector(".hsp");if(!p)return;let y0=0,yb=null,dy=0,pt=[],on=0,top0=0;
@@ -1133,9 +1145,9 @@ async function showRcp(id){const x=D.pay.find(q=>q.id==id);if(!x)return;const c=
 v.innerHTML=`<div class="pvh"><b>${t("rct")}</b><span>${esc(x.id)}</span></div><div class="pvb"><div class="pvp"><img src="${c.toDataURL("image/png")}" alt=""></div></div><div class="rck">${sgf([["png",t("rpng")],["pdf",t("rpdf")]],RCK,"RCK='$K'","fw")}</div><div class="pvf"><button class="b x1" onclick="closePV()" aria-label="${t("pvc")}">✕</button><button class="b" onclick="rcSave(RCK,1)">${t("shr")}</button><button class="b p" onclick="rcSave(RCK)">${t("sv_ph")}</button></div>`;v.classList.add("on");document.body.style.overflow="hidden"}
 let RCK="png";
 async function rcSave(kind,share){if(!RC)return;let blob,name;try{if(kind=="png"){blob=await new Promise(r=>RC.c.toBlob(r,"image/png"));name=RC.name+".png"}else{const bz=document.getElementById("busy");bz.innerHTML=`<div class="spin"></div><div>${t("wait")}</div>`;bz.style.display="flex";try{await libs()}finally{bz.style.display="none"}const{jsPDF}=window.jspdf,W=RC.c.width/2,H=RC.c.height/2,pdf=new jsPDF({unit:"pt",format:[W,H]});pdf.addImage(RC.c.toDataURL("image/jpeg",.95),"JPEG",0,0,W,H);blob=pdf.output("blob");name=RC.name+".pdf"}
-if(share)await shBlob(blob,name);else dlBlob(blob,name)}catch(e){if(e.name!="AbortError")alert(t("err"))}}
-function yearClose(){const y=curY();if(!confirm(t("yq1")))return;if(new Date().getMonth()<11&&new Date().getFullYear()<=y&&!confirm(t("yearly")))return;
- const v=String(prompt(t("yprompt").replace("{y}",bnD(y)))||"").trim().replace(/[০-৯]/g,d=>"০১২৩৪৫৬৭৮৯".indexOf(d));if(v!=String(y))return toast(t("ybad"),1);act("year_close",{confirmYear:y},t("ydone"))}
+if(share)await shBlob(blob,name);else dlBlob(blob,name)}catch(e){if(e.name!="AbortError")say(t("err"))}}
+async function yearClose(){const y=curY();if(!await ask(t("yq1")))return;if(new Date().getMonth()<11&&new Date().getFullYear()<=y&&!await ask(t("yearly")))return;
+ const v=String(await askTxt(t("yprompt").replace("{y}",bnD(y)))||"").trim().replace(/[০-৯]/g,d=>"০১২৩৪৫৬৭৮৯".indexOf(d));if(v!=String(y))return toast(t("ybad"),1);act("year_close",{confirmYear:y},t("ydone"))}
 async function loadArch(y,quiet){ARCHF[y]=1;try{const j=await api("archive_get",{year:y});ARCH[y]=j;try{localStorage.setItem("uif_arch_"+y,JSON.stringify({Contributions:j.Contributions,Fines:j.Fines,Special:j.Special,year:j.year}))}catch(e){}}catch(e){if(e.message!="auth"&&!quiet){if(!ARCH[y])ARCH[y]={err:1};toast(t("e_net"),1)}}if(tab=="old")render(1)}
 const ARCHF={},archC=y=>{try{return JSON.parse(localStorage.getItem("uif_arch_"+y)||"null")}catch(e){return null}},archClr=()=>{try{Object.keys(localStorage).filter(k=>k.indexOf("uif_arch_")==0).forEach(k=>localStorage.removeItem(k))}catch(e){}};
 function archPre(){if(!TOK)return;(SET.years||[]).forEach(y=>{if(!ARCH[y]&&!ARCHF[y])loadArch(y,1)})}
@@ -1153,15 +1165,15 @@ return chips+(NT.length?`<div class="onote">${NT.map(x=>`<p>ℹ️ ${esc(x)}</p>
 function aTab(x){ATAB=x;EDIT=null;LOGS=null;render(1);scrollTo(0,0)}
 function saveMem(){const p={name:fv("m_n"),shares:+fv("m_s")||0};if(!p.name)return toast(t("mname")+"?",1);if(!(p.shares>0))return toast(t("msh")+"?",1);
  if(EDIT&&EDIT.type=="m"){const x=D.members.find(q=>q[4]==EDIT.row);act("mem_edit",Object.assign(p,{row:EDIT.row,key:x?x[0]:""}))}else act("mem_add",p)}
-function memActive(row,on){const x=D.members.find(q=>q[4]==row);if(!x)return;if(!on&&!confirm(x[0]+t("inq")))return;act("mem_active",{row,key:x[0],active:on})}
+async function memActive(row,on){const x=D.members.find(q=>q[4]==row);if(!x)return;if(!on&&!await ask(x[0]+t("inq"),1))return;act("mem_active",{row,key:x[0],active:on})}
 function addUser(){const p={name:fv("u_m"),username:fv("u_u").toLowerCase(),password:fv("u_p")};if(!p.name)return toast(t("pickm")+"?",1);if(!/^[a-z0-9._]{3,20}$/.test(p.username))return toast(t("unh"),1);if(p.password.length<6)return toast(t("upw")+" ≥ 6",1);act("user_add",p)}
 function uEdit(kind,u){if(kind=="ud")delete SESS[u];EDIT={type:kind,row:u};render(1);const e=document.getElementById("ue_in");if(e)e.focus()}
 function uSave(){if(!EDIT)return;const v=fv("ue_in");if(EDIT.type=="up"){if(v.length<6)return toast(t("upw")+" ≥ 6",1);act("user_pass",{username:EDIT.row,password:v})}else{if(!/^[a-z0-9._]{3,20}$/.test(v.toLowerCase()))return toast(t("unh"),1);act("user_rename",{username:EDIT.row,newUsername:v.toLowerCase()})}}
 function imPick(){IM=fv("im_m");render(1)}
-function saveInfo(){const fs=IF.bn.map((_,j)=>fv("im_"+j));if(fs[8]&&!waN(fs[8]).n&&!confirm(t("ph_cq")))return;act("info_set",{name:IM,fields:fs})}
+async function saveInfo(){const fs=IF.bn.map((_,j)=>fv("im_"+j));if(fs[8]&&!waN(fs[8]).n&&!await ask(t("ph_cq")))return;act("info_set",{name:IM,fields:fs})}
 function saveSum(){const v={};["prev","jisan","tax","profit","irr"].forEach(k=>{const e=document.getElementById("s_"+k);if(e&&e.value!=="")v[k]=+e.value});act("sum_set",{values:v})}
 function addImg(){const u=fv("g_u");if(!/^https?:\/\//.test(u))return toast(t("imgu")+"?",1);act("img_add",{url:u,note:fv("g_n")})}
-function delImg(row){const x=D.imgs.find(q=>q[2]==row);if(x&&confirm(t("cdel")))act("img_del",{row,key:x[0]},t("delm"))}
+async function delImg(row){const x=D.imgs.find(q=>q[2]==row);if(x&&await ask(t("cdel"),1))act("img_del",{row,key:x[0]},t("delm"))}
 let DUL=null; function duesBox(){const L=DUL||(SET.spr||SPR_D).map(x=>({r:x.r,f:x.f,t:x.t})),y=curY(),fy=[y-1,y,y+1],fr=fineR(y),F=(l,i)=>`<label class="fl"><span>${l}</span>${i}</label>`,ko=[["n",t("fr_n").replace("{v}","…")],["p",t("fr_p").replace("{v}","…")]];
 const now=L.filter(x=>+x.r>0&&x.f).map(x=>`${f(+x.r)} · ${esc(x.f)}${x.t&&x.t!=x.f?" → "+esc(x.t):""}`).join(" ; ")||t("du_off");
 return`<div class="frm2"><p class="hint2">ℹ️ ${t("du_h")}</p><p class="hint2">📌 ${t("du_now")}: ${now} · ${bnD(y)}: ${frTxt(fr)}</p>${L.map((x,k)=>`<div class="dup" style="border:1px solid rgba(212,165,55,.35);border-radius:12px;padding:8px 10px;margin:8px 0"><div style="display:flex;align-items:center;justify-content:space-between"><b>${t("du_p")} ${bnD(k+1)}</b><button class="b" style="padding:4px 10px" onclick="duesDel(${k})">✕ ${t("du_del")}</button></div>${F(t("du_r"),`<input id="du_r${k}" type="number" inputmode="numeric" min="0" value="${x.r||0}">`)}${F(t("du_f"),`<input id="du_f${k}" type="month" value="${esc(x.f||"")}">`)}${F(t("du_t"),`<input id="du_t${k}" type="month" value="${esc(x.t||"")}">`)}</div>`).join("")}<div class="fb"><button class="b" onclick="duesAdd()">＋ ${t("du_add")}</button></div>
@@ -1173,8 +1185,8 @@ function duesFy(){const r=fineR(+fv("du_fy")),k=document.getElementById("du_fk")
 async function saveDues(){const ok=/^\d{4}-\d{2}$/,L=duesRead().filter(x=>x.r>0);for(const x of L)if(!ok.test(x.f)||!ok.test(x.t)||x.f>x.t)return toast(t("du_bad"),1);if(await act("dues_set",{spr:L,fy:+fv("du_fy"),fk:fv("du_fk"),fv:Math.round(+fv("du_fv")||0)},t("du_ok"))){DUL=null;render(1)}}
 function srvCard(){const S=D.srv;if(!S)return"";const s8=x=>esc(String(x||"").slice(0,8));
 return`<section class="card adm"><div class="ch">🛠️ <span style="flex:1">${t("sv_c")}</span></div><div class="frm2"><p class="hint2">📌 ${t("sv_now")}: <b>${esc(S.ver)}</b>${S.sha?` · <code>${s8(S.sha)}</code>`:""}</p>${S.fail?`<p class="fnw" style="display:block">⚠️ ${t("sv_fail")}: ${esc(S.fail)}</p>`:""}${S.loader?`<p class="hint2">ℹ️ ${t("sv_h")}</p><label class="fl"><span>${t("sv_in")}</span><textarea id="sv_sha" rows="2" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="64 অক্ষর (0-9, a-f)" style="font-family:monospace;font-size:12px"></textarea></label><div class="fb"><button class="b p" onclick="srvSet()">⬆️ ${t("sv_btn")}</button></div>${S.prev?`<div class="fb"><button class="b" onclick="srvBack()">↩️ ${t("sv_back")} (${esc(S.prevVer||s8(S.prev))})</button></div>`:""}`:`<p class="fnw" style="display:block">${t("sv_noload")}</p>`}</div></section>`}
-async function srvSet(){const v=String(fv("sv_sha")||"").trim().toLowerCase().replace(/\s+/g,"");if(!/^[0-9a-f]{64}$/.test(v))return toast(t("sv_bad"),1);if(!confirm(t("sv_q").replace("{s}",v.slice(0,8))))return;if(await act("srv_set",{sha:v},t("sv_ok")))setTimeout(()=>{load().then(ok=>{if(ok)render(1)})},1500)}
-async function srvBack(){if(!confirm(t("sv_bq")))return;if(await act("srv_back",{},t("sv_bok")))setTimeout(()=>{load().then(ok=>{if(ok)render(1)})},1500)}
+async function srvSet(){const v=String(fv("sv_sha")||"").trim().toLowerCase().replace(/\s+/g,"");if(!/^[0-9a-f]{64}$/.test(v))return toast(t("sv_bad"),1);if(!await ask(t("sv_q").replace("{s}",v.slice(0,8))))return;if(await act("srv_set",{sha:v},t("sv_ok")))setTimeout(()=>{load().then(ok=>{if(ok)render(1)})},1500)}
+async function srvBack(){if(!await ask(t("sv_bq"),1))return;if(await act("srv_back",{},t("sv_bok")))setTimeout(()=>{load().then(ok=>{if(ok)render(1)})},1500)}
 function saveSet(){act("settings_set",{est:fv("e_est"),slogan:fv("e_slg"),msgr:fv("e_msg")})}
 function adminPage(fm){const mo=new Date().getMonth(),mem=D.members.map(x=>[x[0],x[0]+(x[3]?" ("+t("inact")+")":"")]),mons=MN.map((_,i)=>[i,mName(i)]),fmons=[[-1,t("old")],...mons];
 const cdA=(ic,ti,b,id)=>`<section class="card adm"${id?` id="${id}"`:""}><div class="ch">${ic} <span style="flex:1">${ti}</span></div>${b}</section>`;
@@ -1291,16 +1303,16 @@ const PMS=["বিকাশ","নগদ","ক্যাশ"],PMK={"বিকা�
 function pmSel(b,k){document.querySelectorAll("#p_ms .pmb").forEach(x=>x.classList.toggle("on",x===b));const w=document.getElementById("p_l4w");if(w)w.style.display=k=="ক্যাশ"?"none":""}
 function pmVal(){const b=document.querySelector("#p_ms .pmb.on");if(!b)return"";const k=PMS[[...b.parentNode.children].indexOf(b)];return k}
 function pmLbl(m){m=String(m||"").replace(/^'/,"");return !m||m=="MFS"?"":(PMK[m]?t("pm_"+PMK[m]):esc(m))+" "}
-function sendPay(){const l4=fv("p_l4").replace(/\D/g,""),amt=+fv("p_a")||0,dt=fv("p_d"),v=fv("p_m"),meth=pmVal();
+async function sendPay(){const l4=fv("p_l4").replace(/\D/g,""),amt=+fv("p_a")||0,dt=fv("p_d"),v=fv("p_m"),meth=pmVal();
 if(!meth)return toast(t("e_meth"),1);
 if(meth!="ক্যাশ"&&l4.length!=4)return toast(t("e_l4"),1);if(amt<=0)return toast(t("e_amt"),1);if(!dt)return toast(t("e_dt"),1);
 const g=tgt(v),me=USER?USER.name:"",mon=g.type=="fine"?g.fineMonth:g.type=="special"?(g.month===""?"":MN[g.month]):MN[g.month];
 if(g.type=="fine"){const d=fineDueC(me,mon);if(d>0&&amt<d)return toast(t("e_fine").replace("{a}",f(d)),1)}
-if(g.type!="special"&&D.pay.some(x=>x.m==me&&x.mon==mon&&!isSpc(x)&&(x.type=="জরিমানা")==(g.type=="fine")&&(x.st=="p"||x.st=="a"))&&!confirm(t("pdup")))return;
+if(g.type!="special"&&D.pay.some(x=>x.m==me&&x.mon==mon&&!isSpc(x)&&(x.type=="জরিমানা")==(g.type=="fine")&&(x.st=="p"||x.st=="a"))&&!await ask(t("pdup")))return;
 lss("uif_meth",meth);act("pay_add",Object.assign({last4:l4,amount:amt,date:dmy(dt),method:meth},g),t("psent")).then(ok=>{if(ok){PT="r";PF="mine";PN=30;render(1);scrollTo(0,0)}})}
-function cancelPay(id){if(confirm(t("pcq")))act("pay_cancel",{id})}
+async function cancelPay(id){if(await ask(t("pcq"),1))act("pay_cancel",{id})}
 function setPay(id,st){act("pay_set",{id,status:st})}
-function delPay(id){const why=askWhy();if(why)act("pay_del",{id,reason:why},t("vdok"))}
+async function delPay(id){const why=await askWhy();if(why)act("pay_del",{id,reason:why},t("vdok"))}
 function cashPay(){const amt=+fv("k_a")||0;if(amt<=0)return toast(t("e_amt"),1);{const g=tgt(fv("k_m"));if(g.type=="fine"){const d=fineDueC(fv("k_who"),g.fineMonth);if(d>0&&amt<d)return toast(t("e_fine").replace("{a}",f(d)),1)}}act("pay_cash",Object.assign({member:fv("k_who"),amount:amt,date:dmy(fv("k_d"))},tgt(fv("k_m"))))}
 const more=n=>n>PN?`<div class="pyc" style="justify-content:center;padding:10px"><button class="qb" onclick="PN+=30;render(1)">${L=="bn"?"আরও দেখুন":"Show more"} (${n-PN})</button></div>`:"";
 function payRow(x,staff){const me=USER?USER.name:"",e=payExp(x),bad=staff&&x.st!="c"&&e&&e!=x.amt,fd=x.type=="জরিমানা"&&x.st!="a"&&x.st!="c"?fineDueC(x.m,x.mon):0,fblk=fd<0||(fd>0&&x.amt<fd);
@@ -1365,7 +1377,7 @@ let p;if(window.__DEMO_PUSH){p="granted";lss("uif_dperm",p)}else{try{p=await Not
 if(p!="granted"){render(1);return toast(t("np_denied"),1)}
 const bz=document.getElementById("busy");bz.innerHTML=`<div class="bzc"><div class="spin"></div><div>${t("wt")}</div></div>`;bz.style.display="flex";
 try{await pushReg();toast(t("np_ok"))}catch(e){if(e.message!="auth")toast(t("np_fail")+(e.message||e),1)}finally{bz.style.display="none";render(1)}}
-async function pushOffDev(){if(!confirm(t("np_offq")))return;const tk=lsg("uif_ptk");lss("uif_pno","1");lss("uif_ptu",null);try{if(tk)await api("push_unreg",{ptk:tk})}catch(e){}toast(t("np_offok"));render(1)}
+async function pushOffDev(){if(!await ask(t("np_offq"),1))return;const tk=lsg("uif_ptk");lss("uif_pno","1");lss("uif_ptu",null);try{if(tk)await api("push_unreg",{ptk:tk})}catch(e){}toast(t("np_offok"));render(1)}
 async function pushSync(){if(!API_URL||!TOK||!USER||!SET.fcm||!pushOK()||pushPerm()!="granted"||lsg("uif_pno"))return;if(lsg("uif_ptk")&&lsg("uif_ptu")==USER.username&&Date.now()-(+lsg("uif_ptt")||0)<6*864e5)return;try{await pushReg();if(tab=="ntf")render(1)}catch(e){}}
 async function pushTest(){try{await api("push_test",{ptk:lsg("uif_ptk")||""});toast(t("np_testok"));if(window.__DEMO_PUSH)setTimeout(()=>pnShow({t:t("np_test_t"),b:t("np_test_b"),inapp:1}),900)}catch(e){if(e.message!="auth")toast(t("np_fail")+e.message,1)}}
 function npTog(k){const P=(D.myPush=D.myPush||{prefs:{}}).prefs=D.myPush.prefs||{};if(P[k]===0)delete P[k];else P[k]=0;render(1);api("push_pref",{prefs:P}).then(()=>toast(t("okm"))).catch(e=>{if(e.message!="auth")toast(t("errm")+e.message,1)})}
@@ -1391,8 +1403,8 @@ if(!cfg.apiKey||!cfg.projectId||!cfg.messagingSenderId||!cfg.appId)return toast(
 act("push_cfg",{cfg,vapid:v,sa:APSA},t("ap_ok")).then(ok=>{if(ok)APSA=""})}
 function pmCard(){const on=(D.push||{}).on,us=D.users.filter(r=>String(r[3]).trim()!="বন্ধ"),pu=(D.push||{}).users||{};
 return`<section class="card adm" id="pmc"><div class="ch">🔔 <span style="flex:1">${t("pm_t")}</span></div><div class="frm2">${on?"":`<p class="phw">⚠️ ${t("pm_off")}</p>`}<p class="hint2">${t("pm_h")}</p>${fldG(t("pm_ti"),`<input id="pm_t" maxlength="80" value="${esc(PMV[0])}">`)}${fldG(t("pm_b"),`<textarea id="pm_b" rows="3" maxlength="300">${esc(PMV[1])}</textarea>`)}<div class="fl"><span>${t("pm_to")}</span>${sgf([["all",t("pm_all")],["sel",t("pm_sel")]],PMT,"PMV=[document.getElementById('pm_t').value,document.getElementById('pm_b').value];PMT='$K';render(1)","fw")}</div>${PMT=="sel"?`<div class="pmw">${us.map(r=>`<label class="pml"><input type="checkbox" class="pmx" value="${esc(r[0])}"><span>${esc(r[0])}</span>${pu[String(r[1]).toLowerCase()]?`<em>🔔</em>`:`<em class="z">🔕</em>`}</label>`).join("")}</div><p class="hint2">🔔 = ${t("pm_leg")}</p>`:""}<div class="fb"><button class="b p" ${on?"":"disabled"} onclick="pmSend()">📨 ${t("pm_send")}</button></div></div></section>`}
-function pmSend(){const ti=fv("pm_t"),bo=fv("pm_b");if(!ti||!bo)return toast(t("pm_e"),1);const to=PMT=="sel"?[...document.querySelectorAll(".pmx:checked")].map(x=>x.value):[];if(PMT=="sel"&&!to.length)return toast(t("pm_e2"),1);
-if(!confirm(t("pm_q").replace("{n}",to.length?bnD(to.length)+(L=="bn"?" জন":""):t("pm_qa"))))return;PMV=[ti,bo];act("push_send",{title:ti,body:bo,to},t("pm_ok")).then(ok=>{if(ok){PMV=["",""];render(1)}})}
+async function pmSend(){const ti=fv("pm_t"),bo=fv("pm_b");if(!ti||!bo)return toast(t("pm_e"),1);const to=PMT=="sel"?[...document.querySelectorAll(".pmx:checked")].map(x=>x.value):[];if(PMT=="sel"&&!to.length)return toast(t("pm_e2"),1);
+if(!await ask(t("pm_q").replace("{n}",to.length?bnD(to.length)+(L=="bn"?" জন":""):t("pm_qa"))))return;PMV=[ti,bo];act("push_send",{title:ti,body:bo,to},t("pm_ok")).then(ok=>{if(ok){PMV=["",""];render(1)}})}
 
 /* ---------- সদস্যের বার্ষিক বিবরণী ---------- */
 let YSY=0,YSN="";
@@ -1437,7 +1449,7 @@ function tplEd(r,mo){const tp=SET.remTpl||REMDEF;RTS=[r||{n:"রাজিব স
 function tplPrev(){const e=document.getElementById("rt_p");if(e&&RTS)e.textContent=remMsg(RTS[0],RTS[1],fv("rt_t")||REMDEF)}
 function tplIns(p){const e=document.getElementById("rt_t");if(!e)return;const a=e.selectionStart??e.value.length,b=e.selectionEnd??a;e.value=e.value.slice(0,a)+p+e.value.slice(b);e.focus();e.setSelectionRange(a+p.length,a+p.length);tplPrev()}
 function tplSave(){const v=document.getElementById("rt_t").value.replace(/\r/g,"").trim();act("rem_tpl",{tpl:v==REMDEF?"":v},t("rt_ok"))}
-function tplReset(){if(confirm(t("rt_rsq")))act("rem_tpl",{tpl:""},t("rt_ok"))}
+async function tplReset(){if(await ask(t("rt_rsq")))act("rem_tpl",{tpl:""},t("rt_ok"))}
 function remSend(n,mo){const r=remList(mo).find(x=>x.n==n);if(!r)return;const w=waN(phOf(n));if(!w.n)return toast(t("ph_cc"),1);openWA(w.n,remMsg(r,mo));D.rem=D.rem||{};D.rem[n]=Date.now();api("pay_rem",{name:n}).catch(()=>{});setTimeout(()=>render(1),400)}
 function phFix(n){IM=n;ATAB="mem";EDIT=null;go("admin");setTimeout(()=>{const e=document.getElementById("im_8");if(e){e.scrollIntoView({block:"center",behavior:"smooth"});e.focus({preventScroll:true})}},450)}
 /* ---------- ব্যাকআপ ---------- */
@@ -1511,7 +1523,7 @@ S.push({name:t("fn"),rows:[[t("member"),"৳",t("st")||"অবস্থা",t("n
 S.push({name:t("inv"),rows:[[t("isec"),t("amtt"),t("icur"),t("idate"),t("iown"),t("iland"),t("iuntil"),t("iret"),t("iprof"),t("ivupd")],...D.inv.map(x=>[x[0],x[1],x[3],x[2],x[6],x[7],x[8],x[9],invProf(x),x[11]||""]),[t("ipall"),"","","","","","","",b.k.s.profit]]});
 if(D.led.length)S.push({name:t("ledm"),rows:[[t("ndate"),t("ltype"),t("lcat"),"৳",t("lnote")],...D.led.map(x=>[x.date,t(x.type=="in"?"lin":x.type=="out"?"lout":"ltr"),x.cat,x.amt,x.note||""])]});
 if(D.acc&&(D.acc.rows||[]).length)S.push({name:t("jrm"),rows:[["ভাউচার","সময়","কোড","হিসাব","ডেবিট","ক্রেডিট","বিবরণ","কে"],...D.acc.rows.slice().reverse().map(r=>[r[0],r[1],r[2],r[3],r[4]?num(r[4]):"",r[5]?num(r[5]):"",r[6],r[8]])]});
-await shBlob(xlsxBlob(S),`UIF_Hisab_${today()}.xlsx`)}catch(e){console.error(e);alert(t("err"))}}
+await shBlob(xlsxBlob(S),`UIF_Hisab_${today()}.xlsx`)}catch(e){console.error(e);say(t("err"))}}
 function repPage(){const mo=new Date().getMonth(),N=D.members.length,mt=MN.map((n,i)=>D.members.reduce((a,x)=>a+tpd(x,i),0)),ms=[...sel].sort((a,b)=>a-b);
 const st=(n,ti,b)=>`<section class="card gl rp2"><div class="ch"><span class="sn">${n}</span><span style="flex:1">${ti}</span></div>${b}</section>`;
 const qb=[["cur","qcur"],["prev","qprev"],["q3","q3"],["all","sa"],["clr","clr"]].map(q=>`<button class="qb${q[0]=="clr"?" x":""}" onclick="qs('${q[0]}')">${t(q[1])}</button>`).join("");
@@ -1540,13 +1552,13 @@ try{const r=await fetch(API_URL,{method:"POST",credentials:"omit",body:JSON.stri
   tf2Close();const e2=document.getElementById("le2");if(e2)e2.textContent=t("e_"+j.error)||t("e_wrong");shk();return}
  tf2Close();await loginOK(j);if(j.bkLeft!=null)setTimeout(()=>toast(t("tf_bkleft").replace("{n}",bnD(j.bkLeft)),1),900)}
 catch(e){er.textContent=t("e_net")}finally{if(document.getElementById("tf2g")){b.disabled=false;b.classList.remove("vfy");b.textContent=t("tf_go")}}}
-function tfCopy(w){const s=w=="key"?(TFS?TFS.secret:""):(TFC||[]).map(c=>c.slice(0,4)+"-"+c.slice(4)).join("\n");try{navigator.clipboard.writeText(s).then(()=>toast(t("tf_cpd")),()=>prompt("",s))}catch(e){prompt("",s)}}
+function tfCopy(w){const s=w=="key"?(TFS?TFS.secret:""):(TFC||[]).map(c=>c.slice(0,4)+"-"+c.slice(4)).join("\n");try{navigator.clipboard.writeText(s).then(()=>toast(t("tf_cpd")),()=>askTxt("",s))}catch(e){askTxt("",s)}}
 async function tfaStart(){const j=await tfCall("tfa_init");if(j){TFS=j;TFC=null;render(1)}}
 async function tfaOn(){const c=asciiD((document.getElementById("tf_c")||{}).value).replace(/\D/g,"");if(c.length!=6)return toast(t("e_tf_wrong"),1);
 const j=await tfCall("tfa_on",{code:c});if(j){TFC=j.codes;TFS=null;USER.tfa=true;lss("uif_user",JSON.stringify(USER));render(1);scrollTo(0,0)}}
 async function tfaDone(){TFC=null;const j=await tfCall("data");if(j){if(j.settings)SET=j.settings;USER=j.user;lss("uif_user",JSON.stringify(USER));parseAll(j.data);saveCache(j)}ATAB="sys";go("admin")}
-async function tfaNewCodes(){const c=prompt(t("tf_newcp"));if(c==null)return;const j=await tfCall("tfa_codes",{code:asciiD(c).replace(/\D/g,"")});if(j){TFC=j.codes;go("tfa")}}
-function tfaReset(un,n){if(!confirm(t("tf_rstq").replace("{n}",n)))return;act("tfa_reset",{username:un},t("tf_rstok"))}
+async function tfaNewCodes(){const c=await askTxt(t("tf_newcp"));if(c==null)return;const j=await tfCall("tfa_codes",{code:asciiD(c).replace(/\D/g,"")});if(j){TFC=j.codes;go("tfa")}}
+async function tfaReset(un,n){if(!await ask(t("tf_rstq").replace("{n}",n),1))return;act("tfa_reset",{username:un},t("tf_rstok"))}
 function tfaCard(){const T=D.tfa||{},hd=`<div class="ch">🔐 <span style="flex:1">${t("tfp")}</span></div>`;
 if(!USER||!USER.tfa)return`<section class="card adm">${hd}<div class="frm2"><p class="rmd rb2">⚠️ ${t("tf_must")}</p><div class="fb"><button class="b p" onclick="go('tfa')">${t("tf_start")}</button></div></div></section>`;
 return`<section class="card adm">${hd}<div class="frm2"><div class="jst ok">${t("tf_onok")}${T.at?` · ${t("tf_since")} ${esc(bnD(String(T.at).slice(0,10)))}`:""}</div><p class="hint2">🧾 ${t("tf_bkn")}: <b class="${(T.bk||0)<3?"r":""}">${bnD(T.bk||0)}</b></p><div class="fb"><button class="b" onclick="tfaNewCodes()">${t("tf_newc")}</button></div><p class="hint2">ℹ️ ${t("tf_lost")}</p></div></section>`}
@@ -1590,8 +1602,8 @@ return`<section class="card adm"><div class="ch">📝 <span style="flex:1">${t("
 function ivOld(s){const m=String(s||"").match(/^(\d{2})-(\d{2})-(\d{4})$/);if(!m)return false;return(Date.now()-new Date(+m[3],+m[2]-1,+m[1]))>183*864e5}
 function ivLine(x){if(isRet(x))return"";const h=(D.ival||[]).filter(v=>x[10]&&v.id==x[10]);
 return`<small>💹 ${t("ivupd")}: ${x[11]?esc(bnD(x[11]))+(ivOld(x[11])?` <b class="r">(${t("ivold")})</b>`:""):t("inodate")}</small>`+(h.length>1?`<details class="ivh"><summary>${t("ivhist")} (${bnD(h.length)})</summary>${h.slice(-6).reverse().map(v=>`<div><span>${esc(bnD(v.d))}</span><b>${f(v.v)}</b></div>`).join("")}</details>`:"")}
-function invVal(row){const x=D.inv.find(q=>q[5]==row);if(!x)return;const v=prompt(t("ivp")+"\n\n"+x[0],x[3]||"");if(v==null)return;
-const n=+asciiD(v).replace(/[,\s৳]/g,"");if(!(n>0))return toast(t("e_bad_amt"),1);const d=prompt(t("ivd"),"");if(d==null)return;act("inv_val",{row,key:x[0],current:Math.round(n),date:asciiD(d).trim()},t("ivok"))}
+async function invVal(row){const x=D.inv.find(q=>q[5]==row);if(!x)return;const v=await askTxt(t("ivp")+"\n\n"+x[0],x[3]||"");if(v==null)return;
+const n=+asciiD(v).replace(/[,\s৳]/g,"");if(!(n>0))return toast(t("e_bad_amt"),1);const d=await askTxt(t("ivd"),"");if(d==null)return;act("inv_val",{row,key:x[0],current:Math.round(n),date:asciiD(d).trim()},t("ivok"))}
 function bsMemo(){const k=calc();if(!k.cur||k.cur==k.inv)return"";const d=k.cur-k.inv;return`<div class="fr"><div class="frm"><small>💹 ${t("bsmv")}</small></div><div class="frr"><small>${f(k.cur)} (<b class="${d<0?"r":"g"}">${d>0?"+":""}${f(d)}</b>)</small></div></div>`}
 /* ---------- সদস্যের avatar: প্রথম পূর্ণ অক্ষর (যেমন হৃ, হা, হি) + প্রত্যেকের নিজস্ব রং ---------- */
 const AVP=[["#3A6FE0","#173E94"],["#12A87A","#0B6B4E"],["#8E63F5","#5634C4"],["#E25A80","#A4264D"],["#13AFC2","#0B6E7C"],["#E9A230","#A8620A"],["#5B74F0","#2C3FB0"],["#DA4E95","#962163"],["#22B358","#0D6B31"],["#E06A2C","#94360B"],["#6E6FF3","#3B3FC4"],["#1497BA","#065F7A"]];
@@ -1619,8 +1631,8 @@ function phPrev(){let d=document.getElementById("phm");if(!d){d=document.createE
 d.innerHTML=`<div class="tf2b"><img class="phpv" src="${PHN}" alt=""><b>${t("ph_pv")}</b><p>${t("ph_pvd")}</p><button class="b p" onclick="phSave()">${t("ph_save")}</button><button class="b" onclick="phClose()">${t("cancel")}</button></div>`}
 function phClose(){const d=document.getElementById("phm");if(d)d.remove()}
 async function phSave(){phClose();const n=USER.name,img=PHN;if(await act("photo_set",{img},t("ph_ok"))){PH[n]={img,v:(D.phv||{})[n]||"l"};phStore();render(1)}}
-function phDel(){if(!confirm(t("ph_delq")))return;act("photo_del",{},t("ph_delok"))}
-function phDelA(n){if(!confirm(t("ph_adelq").replace("{n}",n)))return;act("photo_del",{name:n},t("ph_delok"))}
+async function phDel(){if(!await ask(t("ph_delq"),1))return;act("photo_del",{},t("ph_delok"))}
+async function phDelA(n){if(!await ask(t("ph_adelq").replace("{n}",n),1))return;act("photo_del",{name:n},t("ph_delok"))}
 function render(q){{const no={admin:!(isAdm()||isMod()),log:!(isAdm()||isMod()),cash:!isStaff(),modv:!isAdm(),jrn:!canJr(),tfa:!isAdm(),old:!(SET.years||[]).length};if(no[tab])tab="home"}if(mustPw()&&tab!="pw")tab="pw";else if(must2fa()&&!["tfa","help","pw"].includes(tab))tab="tfa";const k=calc(),m=document.getElementById("m"),N=D.members.length;let h="";
 const sg=v=>pl(v<0?"pr":"pg",(v>0?"+":"")+f(v)),ini=n=>esc(avI(n)),
 cd=(ic,ti,b,x)=>`<section class="card gl"><div class="ch">${ic} <span style="flex:1">${ti}</span>${x||""}</div><div class="w">${b}</div></section>`,
@@ -1676,15 +1688,15 @@ function devBox(un){if(!(un in SESS)){SESS[un]=null;sessLoad(un)}const l=SESS[un
 if(!l)return`<div class="frm2 uin"><p class="hint2">${t("dv_ld")}</p></div>`;
 return`<div class="frm2 uin"><b class="sub2">${t("dv_t")}</b>${l.length?l.map(x=>`<div class="lr"><div class="frm"><b>📱 ${esc(x.dev||t("dv_unk"))}</b><small>${t("dv_in")}: ${x.at?bnD(esc(x.at)):"—"} · ${t("dv_last")}: ${x.last?bnD(esc(x.last)):"—"}</small></div><button class="rb x" onclick="sessKill('${esc(un)}','${esc(x.id)}')">${t("dv_out")}</button></div>`).join("")+(l.length>1?`<div class="fb"><button class="b" onclick="sessKill('${esc(un)}','all')">${t("dv_all")}</button></div>`:""):`<p class="hint2">${t("dv_0")}</p>`}</div>`}
 async function sessLoad(un){try{const j=await api("sess_list",{username:un});SESS[un]=j.list||[]}catch(e){SESS[un]=[];if(e.message!="auth")toast(t("errm")+e.message,1)}if(EDIT&&EDIT.type=="ud"&&EDIT.row==un)render(1)}
-async function sessKill(un,id){if(!confirm(t(id=="all"?"dv_qa":"dv_q")))return;delete SESS[un];await act("sess_kill",{username:un,id},t("dv_ok"))}
+async function sessKill(un,id){if(!await ask(t(id=="all"?"dv_qa":"dv_q"),1))return;delete SESS[un];await act("sess_kill",{username:un,id},t("dv_ok"))}
 function susBox(r){const s=r[6],un=esc(r[1]);
 if(s)return`<div class="frm2 uin"><div class="bks wn"><span class="bki2">⏸️</span><div><b>${t("sp_tag")} · ${t("sp_till").replace("{d}",bnD(esc(s.until)))}</b><small>${t("sus_r")}: ${esc(s.r)}${s.by?` · ${t("sp_by")}: ${esc(s.by)}`:""}</small></div></div><div class="fb"><button class="b p" onclick="act('sus_lift',{username:'${un}'},t('sp_ok2'))">${t("sp_lift")}</button><button class="b" onclick="cancelEdit()">${t("cancel")}</button></div></div>`;
 const d=new Date(),td=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 return`<div class="frm2 uin">${fldZ(t("sp_r"),`<textarea id="sp_r" rows="2" maxlength="200"></textarea>`)}${fldZ(t("sp_d"),`<input id="sp_d" type="date" min="${td}">`)}<p class="hint2">${t("sp_h")}</p><div class="fb"><button class="b p" onclick="susSave('${un}')">${t("sp_go")}</button><button class="b" onclick="cancelEdit()">${t("cancel")}</button></div></div>`}
-function susSave(un){const r=fv("sp_r"),d=fv("sp_d");if(!r)return toast(t("sus_r")+"?",1);if(!d)return toast(t("sp_d")+"?",1);if(!confirm(t("sp_q")))return;act("sus_set",{username:un,reason:r,until:d},t("sp_ok"))}
+async function susSave(un){const r=fv("sp_r"),d=fv("sp_d");if(!r)return toast(t("sus_r")+"?",1);if(!d)return toast(t("sp_d")+"?",1);if(!await ask(t("sp_q"),1))return;act("sus_set",{username:un,reason:r,until:d},t("sp_ok"))}
 function mntCard(){const m=(SET||{}).mnt;
 return cdZ("🛠️",t("mnt_t"),`<div class="frm2"><div class="bks${m?" wn":" ok"}"><span class="bki2">${m?"🔴":"🟢"}</span><div><b>${m?t("mnt_on"):t("mnt_off")}</b>${m&&m.at?`<small>${t("mnt_since")}: ${bnD(esc(m.at))}</small>`:""}</div></div><p class="hint2">${t("mnt_h")}</p>${m?`<p class="hint2">💬 ${esc(m[L]||m.bn)}</p><div class="fb"><button class="b p" onclick="act('maint_set',{on:false},t('mnt_ok2'))">${t("mnt_stop")}</button></div>`:`${fldZ(t("mnt_bn"),`<textarea id="mnt_bn" rows="2" maxlength="300" placeholder="${esc(MNT0.bn)}"></textarea>`)}${fldZ(t("mnt_en"),`<textarea id="mnt_en" rows="2" maxlength="300" placeholder="${esc(MNT0.en)}"></textarea>`)}<p class="hint2">${t("mnt_eh")}</p><div class="fb"><button class="b p" onclick="mntGo()">${t("mnt_go")}</button></div>`}</div>`,"mntc")}
-function mntGo(){if(!confirm(t("mnt_q")))return;act("maint_set",{on:true,bn:fv("mnt_bn"),en:fv("mnt_en")},t("mnt_ok"))}
+async function mntGo(){if(!await ask(t("mnt_q"),1))return;act("maint_set",{on:true,bn:fv("mnt_bn"),en:fv("mnt_en")},t("mnt_ok"))}
 function mntBar(){return isAdm()&&(SET||{}).mnt?`<div class="mntbar" onclick="ATAB='sys';go('admin')">🛠️ ${t("mnt_bar")}</div>`:""}
 function showMaint(m){let o=document.getElementById("mnt");if(!o){o=document.createElement("div");o.id="mnt";o.className="mnt";document.body.appendChild(o)}
 o.innerHTML=`<div class="mntb"><div class="mnti">🛠️</div><b>${t("e_maint")}</b><p>${esc((m&&(m[L]||m.bn))||MNT0[L]||MNT0.bn)}</p><small>${t("mnt_auto")}</small><button class="b p" onclick="mntChk(1)">🔄 ${t("mnt_retry")}</button></div>`;
@@ -1726,14 +1738,14 @@ pdf.setFontSize(8);pdf.setTextColor(163,177,207);pdf.text("United Investments Fo
 const pc=document.createElement("canvas");pc.width=W*S;pc.height=H*S;const g=pc.getContext("2d");g.fillStyle="#0A1430";g.fillRect(0,0,pc.width,pc.height);g.drawImage(c,x*S,y*S,w*S,h*S);
 g.fillStyle="#A3B1CF";g.font=(8*S)+"px system-ui,'Noto Sans Bengali',sans-serif";g.textAlign="left";g.fillText("United Investments Foundation",M*S,(H-12)*S);
 PV={blob:pdf.output("blob"),name};bz.style.display="none";showPreview([pc])}
-catch(e){console.error(e);alert(t("err"))}finally{box.remove();bz.style.display="none"}}
+catch(e){console.error(e);say(t("err"))}finally{box.remove();bz.style.display="none"}}
 function showPreview(pages){const v=document.getElementById("pv");v.innerHTML=`<div class="pvh"><b>${t("pvt")}</b><span>${pages.length} ${t("pg")}</span></div><div class="pvb">${pages.map((p,i)=>`<div class="pvp"><img src="${p.toDataURL("image/jpeg",.85)}" alt=""><small>${t("pg")} ${i+1} / ${pages.length}</small></div>`).join("")}</div><div class="pvf"><button class="b x1" onclick="closePV()" aria-label="${t("pvc")}">✕</button><button class="b" onclick="sharePV()">${t("shr")}</button><button class="b p" onclick="savePV()">${t("sv_ph")}</button></div>`;v.classList.add("on");document.body.style.overflow="hidden"}
 function closePV(){const v=document.getElementById("pv");v.classList.remove("on");v.innerHTML="";document.body.style.overflow="";PV=null}
-function dlBlob(blob,name){try{const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;a.rel="noopener";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);toast(t("dl_ok"))}catch(e){alert(t("err"))}}
-async function shBlob(blob,name){const file=new File([blob],name,{type:blob.type||"application/pdf"});try{if(navigator.canShare&&navigator.canShare({files:[file]}))await navigator.share({files:[file],title:name});else dlBlob(blob,name)}catch(e){if(e.name!="AbortError")alert(t("err"))}}
+function dlBlob(blob,name){try{const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;a.rel="noopener";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);toast(t("dl_ok"))}catch(e){say(t("err"))}}
+async function shBlob(blob,name){const file=new File([blob],name,{type:blob.type||"application/pdf"});try{if(navigator.canShare&&navigator.canShare({files:[file]}))await navigator.share({files:[file],title:name});else dlBlob(blob,name)}catch(e){if(e.name!="AbortError")say(t("err"))}}
 function savePV(){if(PV)dlBlob(PV.blob,PV.name)}
 async function sharePV(){if(PV)await shBlob(PV.blob,PV.name)}
-function monthlyPDF(){const ms=[...sel].sort((a,b)=>a-b);if(!ms.length)return alert(t("nosel"));makePDF(monthSecs(ms),`UIF_Monthly_${ms.map(i=>MNE[i]).join("-")}_${curY()}.pdf`)}
+function monthlyPDF(){const ms=[...sel].sort((a,b)=>a-b);if(!ms.length)return say(t("nosel"));makePDF(monthSecs(ms),`UIF_Monthly_${ms.map(i=>MNE[i]).join("-")}_${curY()}.pdf`)}
 const U0="logo.png";const U=U0;document.querySelector(".top .av").src=U;document.getElementById("llogo").src=U;
 GOP=new URLSearchParams(location.search).get("go");if(GOP){try{history.replaceState({t:"home"},"",location.pathname)}catch(e){}}
 if("serviceWorker" in navigator)navigator.serviceWorker.addEventListener("message",e=>{const d=e.data||{};if(d.go){GOP=String(d.go);goPend()}if(d.push){pnShow({t:d.push.title,b:d.push.body,u:d.push.url,inapp:1});if(LOADED&&TOK&&!["pay","cash","admin"].includes(tab))load().then(ok=>{if(ok)render(1)})}});
