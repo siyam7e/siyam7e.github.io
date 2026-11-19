@@ -948,7 +948,7 @@ if(LGB||!API_URL||!TOK)return;LGB=1;const a=document.querySelector(".top .avw");
 const ok=await load();LGB=0;if(a){a.classList.remove("rf");a.classList.add("rfo");setTimeout(()=>a.classList.remove("rfo"),350)}if(ok){SK="";render();toast(t("rfok"))}}
 function openMsgr(){const u=String(SET.msgr||"").trim();if(!u)return;if(/Android/i.test(navigator.userAgent)&&/^https:\/\/(m\.me|(www\.)?messenger\.com)\//i.test(u)){location.href="intent://"+u.replace(/^https:\/\//i,"")+"#Intent;scheme=https;package=com.facebook.orca;S.browser_fallback_url="+encodeURIComponent(u)+";end";return}window.open(u,"_blank","noopener")}
 function sideHTML(){const it=(k,ic,lab,b)=>`<button class="it ${tab==k?"on":""}" data-t="${k}" onclick="go('${k}')"><span class="ii">${ic}</span><span class="itl">${t(lab)}</span>${b?`<em class="ib2" data-b="${b}"></em>`:""}</button>`,G=(lab,items)=>items.length?`<div class="gh">${t(lab)}</div>`+items.join(""):"";
-const mg=[...(isAdm()?[it("admin","🛡️","admp")]:[]),...(isStaff()?[it("cash","🗂️","cashp","cash")]:[]),...(isMod()?[it("admin","🛠️","modp")]:[]),...(isAdm()?[it("modv","🛠️","modp"),it("log","📝","logp")]:[])];
+const mg=[...(isAdm()?[it("admin","🛡️","admp")]:[]),...(isStaff()?[it("cash","🗂️","cashp","cash")]:[]),...(isMod()?[it("admin","🛠️","modp")]:[]),...(isAdm()?[it("modv","🛠️","modp")]:[]),...(isAdm()||isMod()?[it("log","📝","logp")]:[])];
 return`<div class="br" onclick="logoHome('side')" role="button"><img src="${U}"><div><b>United Investments Foundation</b><small>${API_URL&&USER?'<i class="od il on"></i>'+esc(USER.name)+rbg(USER.name,USER.role):"UIF"}</small></div></div>`
 +G("g_mng",mg)+G("g_main",[it("home","🏠","home"),...(API_URL&&TOK?[it("inbox","📬","nfc","nfc")]:[]),it("me","👤","my"),it("pay","💸","paym")])
 +G("g_acc",[it("mon","📅","dp"),it("fin","⚖️","fn"),it("inv","📈","inv"),it("led","📒","ledm"),...(canJr()?[it("jrn","🧾","jrm")]:[]),it("rep","📄","rt"),...((SET.years||[]).length?[it("old","🗃️","oldy")]:[])])
@@ -1622,7 +1622,7 @@ function phClose(){const d=document.getElementById("phm");if(d)d.remove()}
 async function phSave(){phClose();const n=USER.name,img=PHN;if(await act("photo_set",{img},t("ph_ok"))){PH[n]={img,v:(D.phv||{})[n]||"l"};phStore();render(1)}}
 function phDel(){if(!confirm(t("ph_delq")))return;act("photo_del",{},t("ph_delok"))}
 function phDelA(n){if(!confirm(t("ph_adelq").replace("{n}",n)))return;act("photo_del",{name:n},t("ph_delok"))}
-function render(q){if(mustPw()&&tab!="pw")tab="pw";else if(must2fa()&&!["tfa","help","pw"].includes(tab))tab="tfa";const k=calc(),m=document.getElementById("m"),N=D.members.length;let h="";
+function render(q){{const no={admin:!(isAdm()||isMod()),log:!(isAdm()||isMod()),cash:!isStaff(),modv:!isAdm(),jrn:!canJr(),tfa:!isAdm(),old:!(SET.years||[]).length};if(no[tab])tab="home"}if(mustPw()&&tab!="pw")tab="pw";else if(must2fa()&&!["tfa","help","pw"].includes(tab))tab="tfa";const k=calc(),m=document.getElementById("m"),N=D.members.length;let h="";
 const sg=v=>pl(v<0?"pr":"pg",(v>0?"+":"")+f(v)),ini=n=>esc(avI(n)),
 cd=(ic,ti,b,x)=>`<section class="card gl"><div class="ch">${ic} <span style="flex:1">${ti}</span>${x||""}</div><div class="w">${b}</div></section>`,
 kp=(ic,bg,v,l,s,g)=>`<div class="k gl${g?" lnk":""}"${g?` onclick="${g}"`:""}><div class="ic" style="background:${bg}">${ic}</div><div><b>${v}</b><span>${l}</span>${s?`<i>${s}</i>`:""}</div></div>`,
