@@ -791,7 +791,7 @@ function mn(o){if(o)fit();document.getElementById("side").classList.toggle("on",
 function go(x){if(x=="pay"&&(tab!="pay"||PTN))PT=PTN||"w";PTN=0;if(x!=tab)try{history.pushState({t:x},"")}catch(e){}tab=x;mn(0);render();scrollTo(0,0)}
 try{history.replaceState({t:"home"},"")}catch(e){}
 addEventListener("popstate",e=>{const pv=document.getElementById("pv"),sd=document.getElementById("side"),keep=()=>{try{history.pushState({t:tab},"")}catch(e){}};
-if(TOUR){tourEnd();keep();return}if(document.getElementById("hs")){hsClose();keep();return}if(pv&&pv.classList.contains("on")){closePV();keep();return}
+if(TOUR){tourEnd();keep();return}if(document.getElementById("hs")){hsClose();keep();return}if(document.getElementById("phm")){phClose();keep();return}if(document.getElementById("vpop")){vpLater();keep();return}if(pv&&pv.classList.contains("on")){closePV();keep();return}
 if(sd&&sd.classList.contains("on")){mn(0);keep();return}
 if(document.body.classList.contains("lo"))return;
 tab=(e.state&&e.state.t)||"home";render();scrollTo(0,0)});
@@ -1077,6 +1077,9 @@ function hsOpen(){if(document.getElementById("hs"))return;const ctx=(HCTX[tab]||
 const d=document.createElement("div");d.id="hs";d.innerHTML=`<div class="hsp"><i class="hsg"></i><div class="hsh">🎧 ${t("help")}</div>${ctx.length?`<div class="hgh">${t("hl_here")}</div>${ctx.map(row).join("")}`:""}<div class="hgh">${t("hl_top")}</div>${top.map(row).join("")}<div class="hsf"><button class="b p" onclick="hsClose();HQ='';go('help')">${t("hl_all")}</button>${SET.msgr?`<button class="b" onclick="openMsgr()">💬 ${t("msgr")}</button>`:""}</div></div>`;
 d.onclick=e=>{if(e.target===d)hsDown()};document.body.appendChild(d);hsDrag(d);requestAnimationFrame(()=>d.classList.add("on"));fabSync()}
 function hsClose(){const d=document.getElementById("hs");if(d)d.remove();document.documentElement.classList.remove("hsl");fabSync()}
+/* পপআপ/মেনু/প্যানেল খোলা থাকলে পেছনের পাতা আটকে রাখা ও ব্রাউজারের টেনে-রিফ্রেশ বন্ধ (১৯-১১-২০২৬) */
+function lockSync(){const g=i=>document.getElementById(i),sh=e=>!!e&&getComputedStyle(e).display!="none",on=!!(g("hs")||g("vpop")||g("phm")||g("tf2")||g("iosp")||g("tov")||document.querySelector("#side.on")||sh(g("pv"))||[...document.querySelectorAll(".mnt")].some(sh));document.documentElement.classList.toggle("hsl",on)}
+(()=>{const st=()=>{const mo=new MutationObserver(lockSync);mo.observe(document.body,{childList:true});["side","pv"].forEach(i=>{const e=document.getElementById(i);if(e)mo.observe(e,{attributes:true,attributeFilter:["class","style"]})});document.querySelectorAll(".mnt").forEach(e=>mo.observe(e,{attributes:true,attributeFilter:["class","style"]}));lockSync()};document.body?st():document.addEventListener("DOMContentLoaded",st)})();
 function hsDown(){const d=document.getElementById("hs"),p=d&&d.querySelector(".hsp");if(!p)return hsClose();p.classList.remove("drg");p.style.transition="transform .22s ease-in";p.style.transform="translate3d(0,110%,0)";d.style.transition="opacity .22s";d.style.opacity="0";setTimeout(hsClose,220)}
 function hsDrag(d){document.documentElement.classList.add("hsl");const p=d.querySelector(".hsp");if(!p)return;let y0=0,yb=null,dy=0,pt=[],on=0,top0=0;
 d.addEventListener("touchmove",e=>{if(!p.contains(e.target))e.preventDefault()},{passive:false});
