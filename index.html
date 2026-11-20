@@ -974,7 +974,7 @@ act("poll_edit",{id:ev.id,question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r")
 function pollAdd(){const q=fv("v_q");if(!q)return toast(t("vq")+"?",1);const opts=VK=="yn"?[t("vyes"),t("vno")]:fv("v_o").split("\n").map(x=>x.trim()).filter(Boolean);if(opts.length<2)return toast(t("vopts")+"?",1);act("poll_add",{question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r"),end:dmy(fv("v_e"))})}
 function pollClose(id,open){act("poll_close",{id,open})}
 async function pollDel(id){if(await ask(t("vq2"),1))act("poll_del",{id},t("delm"))}
-const APPV="117";/* রিলিজের সময় sw.js-এর C-র সঙ্গে মিলিয়ে বাড়াতে হবে */const verTxt=()=>t("ver")+" · v"+(L=="bn"?bnD(APPV):APPV);
+const APPV="118";/* রিলিজের সময় sw.js-এর C-র সঙ্গে মিলিয়ে বাড়াতে হবে */const verTxt=()=>t("ver")+" · v"+(L=="bn"?bnD(APPV):APPV);
 (function(){try{const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),sa=navigator.standalone||matchMedia("(display-mode: standalone)").matches;if(!ios||sa)return;const f=()=>{const e=document.getElementById("ioshint");if(!e)return;e.innerHTML=L=="en"?"📱 To install on iPhone: click <b>Share ⬆️</b> below → <b>Add to Home Screen</b>":"📱 আইফোনে অ্যাপ বসাতে নিচের <b>Share ⬆️</b> → <b>Add to Home Screen</b> ক্লিক করুন";e.classList.add("on")};document.readyState=="loading"?document.addEventListener("DOMContentLoaded",f):f()}catch(e){}})();let LGB=0;
 async function logoHome(src){if(TOUR)tourEnd();hsClose();vpClose();const pv=document.getElementById("pv");if(pv&&pv.classList.contains("on"))closePV();
 if(tab!="home"){go("home");return}if(src=="side"){mn(0);return}
@@ -1833,8 +1833,6 @@ async function sharePV(){if(PV)await shBlob(PV.blob,PV.name)}
 function monthlyPDF(){const ms=[...sel].sort((a,b)=>a-b);if(!ms.length)return say(t("nosel"));makePDF(monthSecs(ms),`UIF_Monthly_${ms.map(i=>MNE[i]).join("-")}_${curY()}.pdf`)}
 const U0="logo.png";const U=U0;document.querySelector(".top .av").src=U;document.getElementById("llogo").src=U;
 GOP=new URLSearchParams(location.search).get("go");if(GOP){try{history.replaceState({t:"home"},"",location.pathname)}catch(e){}}
-/* uif-v117: APK (TWA) চেনা — sw.js তখন নোটিফিকেশনে ডানের বড় লোগো দেয় না (বাঁয়ে অ্যাপের আইকন থাকেই) */
-try{if(/^android-app:\/\/io\.github\.siyam7e\.twa/.test(document.referrer)&&"caches" in window)caches.open("uif-flag").then(c=>c.put("twa",new Response("1")))}catch(e){}
 if("serviceWorker" in navigator)navigator.serviceWorker.addEventListener("message",e=>{const d=e.data||{};if(d.pushAck&&PTW&&d.pushAck=="test"){PTW(1);PTW=null}if(d.go){GOP=String(d.go);goPend()}if(d.push){pnShow({t:d.push.title,b:d.push.body,u:d.push.url,inapp:1});if(LOADED&&TOK&&!["pay","cash","admin"].includes(tab))load().then(ok=>{if(ok)render(1)})}});
 if(API_URL&&!TOK){boot(0);showLogin()}
 else if(API_URL){const c=readCache();
