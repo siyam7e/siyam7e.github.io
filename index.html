@@ -277,7 +277,7 @@ body.lo .top,body.lo main{visibility:hidden}
 #le2{color:#c0392b;font-size:13px;min-height:18px;margin-top:10px}
 /* ===== toast ===== */
 #toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;pointer-events:none;z-index:50;background:#0D7349;color:#fff;padding:10px 18px;border-radius:12px;font-size:14px;box-shadow:0 8px 20px #0005;transition:.25s;max-width:88vw;text-align:center}
-#toast.on{opacity:1;transform:translate(-50%,0)}#toast.bad{background:#c0392b}
+#toast.on{opacity:1;transform:translate(-50%,0)}#toast.bad{background:#c0392b;width:92vw;max-width:520px;box-sizing:border-box;padding:12px 18px;line-height:1.55;border:1px solid rgba(255,255,255,.18);border-radius:14px}
 /* ===== admin ===== */
 .admb{font-style:normal;font-size:10.5px;font-weight:700;background:#D4A537;color:#071433;border-radius:8px;padding:1px 7px;margin-left:4px;vertical-align:middle}
 .frm2{padding:12px 14px 6px;display:grid;gap:10px}
@@ -583,7 +583,7 @@ html.hsl,html.hsl body{overflow:hidden!important;overscroll-behavior:none!import
 .phc{display:flex;flex-wrap:wrap;gap:6px}.phc .qb{padding:5px 10px;font-size:12.5px;border-radius:10px}.rth{line-height:1.7}
 .rtl{font-size:12px;color:var(--m);font-weight:700}.rtp{white-space:pre-wrap;padding:12px;border-radius:12px 12px 12px 4px;background:#0B3B2A;border:1px solid rgba(43,214,123,.3);color:#E3FFF0;font-size:13.5px;line-height:1.6}
 .fl small.hint2{display:block;margin-top:3px}.fl small.hint2 .wr,.wr{color:#F7C766}
-.bks{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:#0E1A3C;border:1px solid #22345E}.bks.ok{border-color:rgba(43,214,123,.4)}.bks.wn{border-color:rgba(229,72,77,.55)}.sptag{display:block;color:#E5484D;font-weight:600;font-size:12px}.mntbar{background:#E5484D;color:#fff;padding:9px 12px;border-radius:12px;margin:10px 0 0;font-weight:600;font-size:13px;text-align:center;cursor:pointer}.mnt{position:fixed;inset:0;z-index:9999;background:rgba(8,16,36,.94);display:none;align-items:center;justify-content:center;padding:24px}.mntb{background:#fff;color:#14213D;border-radius:18px;padding:26px 22px;max-width:360px;width:100%;text-align:center;display:flex;flex-direction:column;gap:10px}.mntb b{font-size:18px}.mntb p{margin:0;line-height:1.6}.mntb small{color:#667}.mnti{font-size:46px}.bki2{font-size:24px}.bks b{display:block;font-size:14px}.bks small{display:block;color:var(--m);font-size:12px}
+.bks{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:#0E1A3C;border:1px solid #22345E}.bks.ok{border-color:rgba(43,214,123,.4)}.bks.wn{border-color:rgba(229,72,77,.55)}.sptag{display:block;color:#E5484D;font-weight:600;font-size:12px}.mntbar{background:#E5484D;color:#fff;padding:9px 12px;border-radius:12px;margin:10px 0 0;font-weight:600;font-size:13px;text-align:center;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mnt{position:fixed;inset:0;z-index:9999;background:rgba(8,16,36,.94);display:none;align-items:center;justify-content:center;padding:24px}.mntb{background:#fff;color:#14213D;border-radius:18px;padding:26px 22px;max-width:360px;width:100%;text-align:center;display:flex;flex-direction:column;gap:10px}.mntb b{font-size:18px}.mntb p{margin:0;line-height:1.6}.mntb small{color:#667}.mnti{font-size:46px}.bki2{font-size:24px}.bks b{display:block;font-size:14px}.bks small{display:block;color:var(--m);font-size:12px}
 .mkr.s_p{box-shadow:inset 3px 0 #F7C766}.mkr.s_a{box-shadow:inset 3px 0 #4ADE9B}.mkr.s_r{box-shadow:inset 3px 0 #FF8076}
 .vwho .od.il{margin-right:5px}
 .rte textarea{width:100%;box-sizing:border-box;font:inherit;font-size:14.5px;line-height:1.6;padding:11px 12px;border-radius:10px;border:1.5px solid var(--l);background:var(--bg);color:var(--t);outline:0;resize:vertical}.rte textarea:focus{border-color:#3B6FD1}
@@ -811,7 +811,8 @@ async function loginOK(j){ TOK=j.token;USER=j.user;lss("uif_tok",TOK);lss("uif_u
  await load();boot(0);if(TOK)LOADED?render():offline()}
 function logout(silent){const tk=TOK;if(tk&&!silent&&API_URL)fetch(API_URL,{method:"POST",body:JSON.stringify({action:"logout",token:tk,ptk:lsg("uif_ptu")?lsg("uif_ptk")||"":""})}).catch(()=>{});
 TOK=null;USER=null;LOADED=0;boot(0);vpClose();VPD=new Set();if(typeof tourEnd=="function"){tourEnd();hsClose()}lss("uif_tok",null);lss("uif_user",null);lss("uif_me",null);lss("uif_cache",null);archClr();try{localStorage.removeItem("uif_ph")}catch(e){}PH={};lss("uif_ptu",null);pushSync.d=0;window._me="";SK="";D.users=[];mn(0);tab="home";showLogin()}
-function toast(msg,bad){const e=document.getElementById("toast");e.textContent=msg;e.className="on"+(bad?" bad":"");clearTimeout(e._t);e._t=setTimeout(()=>e.className="",2600)}
+function toast(msg,bad){const e=document.getElementById("toast");e.textContent=msg;e.className="on"+(bad?" bad":"");clearTimeout(e._t);e._t=setTimeout(()=>e.className="",Math.max(2600,Math.min(7000,String(msg).length*70)))}
+function mntFit(){const e=document.querySelector(".mntbar");if(!e)return;const f=()=>{let z=13;e.style.fontSize="";while(e.scrollWidth>e.clientWidth&&z>9){z-=.5;e.style.fontSize=z+"px"}};f();try{document.fonts.ready.then(f)}catch(x){}}
 async function act(action,p,okMsg){const bz=document.getElementById("busy");bz.innerHTML=`<div class="bzc"><div class="spin"></div><div>${t("bz_sv")}</div></div>`;const bt=setTimeout(()=>bz.style.display="flex",120);
 try{const r0=await api(action,Object.assign({},p,{withData:1}));const j=r0&&r0._d?r0._d:await api("data");if(j.settings)SET=j.settings;USER=j.user;CASHON=j.cashOn!==false;lss("uif_user",JSON.stringify(USER));parseAll(j.data);saveCache(j);EDIT=null;render(1);toast(okMsg||t("okm"));if(r0&&r0.push)pnShow(r0.push);return true}catch(e){if(e.message!="auth")toast(t("errm")+e.message,1);return false}finally{clearTimeout(bt);bz.style.display="none"}}
 function calc(){const c=D.members.reduce((a,m)=>a+m[2].reduce((x,y)=>x+y,0)*1000,0),fp=D.fines.filter(x=>x[2]=="paid").reduce((a,x)=>a+x[1],0),s=D.sum,
@@ -973,7 +974,7 @@ act("poll_edit",{id:ev.id,question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r")
 function pollAdd(){const q=fv("v_q");if(!q)return toast(t("vq")+"?",1);const opts=VK=="yn"?[t("vyes"),t("vno")]:fv("v_o").split("\n").map(x=>x.trim()).filter(Boolean);if(opts.length<2)return toast(t("vopts")+"?",1);act("poll_add",{question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r"),end:dmy(fv("v_e"))})}
 function pollClose(id,open){act("poll_close",{id,open})}
 async function pollDel(id){if(await ask(t("vq2"),1))act("poll_del",{id},t("delm"))}
-const APPV="121";/* রিলিজের সময় sw.js-এর C-র সঙ্গে মিলিয়ে বাড়াতে হবে */const verTxt=()=>t("ver")+" · v"+(L=="bn"?bnD(APPV):APPV);
+const APPV="122";/* রিলিজের সময় sw.js-এর C-র সঙ্গে মিলিয়ে বাড়াতে হবে */const verTxt=()=>t("ver")+" · v"+(L=="bn"?bnD(APPV):APPV);
 (function(){try{const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),sa=navigator.standalone||matchMedia("(display-mode: standalone)").matches;if(!ios||sa)return;const f=()=>{const e=document.getElementById("ioshint");if(!e)return;e.innerHTML=L=="en"?"📱 To install on iPhone: click <b>Share ⬆️</b> below → <b>Add to Home Screen</b>":"📱 আইফোনে অ্যাপ বসাতে নিচের <b>Share ⬆️</b> → <b>Add to Home Screen</b> ক্লিক করুন";e.classList.add("on")};document.readyState=="loading"?document.addEventListener("DOMContentLoaded",f):f()}catch(e){}})();let LGB=0;
 async function logoHome(src){if(TOUR)tourEnd();hsClose();vpClose();const pv=document.getElementById("pv");if(pv&&pv.classList.contains("on"))closePV();
 if(tab!="home"){go("home");return}if(src=="side"){mn(0);return}
@@ -1759,7 +1760,7 @@ if(tab=="ntf")h=ntfPage();
 if(tab=="pay")h=payPage();
 if(tab=="cash"&&!isStaff()){tab="home";return render(q)}
 if(tab=="cash")h=cashPage();
-m.innerHTML=mntBar()+h;fitB2();if(!q)anim(m);if(tab=="home")setTimeout(()=>{welcomeCheck()||vpopCheck()},700);else vpClose();fabSync();if(tab=="home")slider();else clearInterval(slT);goPend()}
+m.innerHTML=mntBar()+h;fitB2();mntFit();if(!q)anim(m);if(tab=="home")setTimeout(()=>{welcomeCheck()||vpopCheck()},700);else vpClose();fabSync();if(tab=="home")slider();else clearInterval(slT);goPend()}
 // ===== সংস্করণ 2A: ডিভাইস, স্থগিত, রক্ষণাবেক্ষণ =====
 const MNT0={bn:"অ্যাপের রক্ষণাবেক্ষণের কাজ চলছে। কিছুক্ষণ পর আবার চেষ্টা করুন।",en:"The app is under maintenance. Please try again a little later."};
 let SESS={},MNT_T=0;
