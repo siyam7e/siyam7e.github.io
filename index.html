@@ -565,7 +565,7 @@ html.hsl,html.hsl body{overflow:hidden!important;overscroll-behavior:none!import
 .sgf.ptb button em{position:absolute;top:4px;right:8px;min-width:18px;padding:0 5px;font-size:10.5px;line-height:17px;border-radius:9px;background:#E5484D!important;color:#fff!important}
 .pnw{padding:14px}.pnc{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .pnn{display:flex;align-items:center;gap:10px;padding:14px;border-radius:14px;background:linear-gradient(135deg,#0E1B40,#132A5C);border:1px dashed rgba(212,165,55,.6)}
-.pnn b{flex:1;min-width:0;font-size:24px;letter-spacing:1px;color:#F3D27A;font-variant-numeric:tabular-nums;white-space:nowrap}.cpb{font-weight:700}
+.pnn b{flex:1;min-width:0;font-size:24px;letter-spacing:1px;color:#F3D27A;font-variant-numeric:tabular-nums;white-space:nowrap}.cpb{font-weight:700}.cpf .ch{padding:10px 14px}.cpf .cpr{padding:10px 14px 0;gap:10px}.cpf .av.lg{width:46px;height:46px;font-size:18px}.cpf .cps{padding:6px 14px 0}.cpf .cps span{padding:4px 10px}.cpf .cpn{margin:8px 14px 0;padding:8px 12px}.cpf .wab{margin:8px 14px 10px;padding:11px}
 .pnh{margin:10px 0 0;padding:9px 12px;border-radius:10px;background:rgba(246,196,90,.1);border:1px solid rgba(246,196,90,.3);color:#F7D58A;font-size:13px;font-weight:600}
 @media(max-width:360px){.pnn b{font-size:19px;letter-spacing:.5px}.pnn{padding:12px 10px}}
 .cpr{display:flex;align-items:center;gap:12px;padding:14px 14px 4px}.cpr .frm b{font-size:16px}
@@ -980,7 +980,7 @@ act("poll_edit",{id:ev.id,question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r")
 function pollAdd(){const q=fv("v_q");if(!q)return toast(t("vq")+"?",1);const opts=VK=="yn"?[t("vyes"),t("vno")]:fv("v_o").split("\n").map(x=>x.trim()).filter(Boolean);if(opts.length<2)return toast(t("vopts")+"?",1);act("poll_add",{question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r"),end:dmy(fv("v_e"))})}
 function pollClose(id,open){act("poll_close",{id,open})}
 async function pollDel(id){if(await ask(t("vq2"),1))act("poll_del",{id},t("delm"))}
-const APPV="128";/* রিলিজের সময় sw.js-এর C-র সঙ্গে মিলিয়ে বাড়াতে হবে */const verTxt=()=>t("ver")+" · v"+(L=="bn"?bnD(APPV):APPV);
+const APPV="129";/* রিলিজের সময় sw.js-এর C-র সঙ্গে মিলিয়ে বাড়াতে হবে */const verTxt=()=>t("ver")+" · v"+(L=="bn"?bnD(APPV):APPV);
 (function(){try{const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),sa=navigator.standalone||matchMedia("(display-mode: standalone)").matches;if(!ios||sa)return;const f=()=>{const e=document.getElementById("ioshint");if(!e)return;e.innerHTML=L=="en"?"📱 To install on iPhone: click <b>Share ⬆️</b> below → <b>Add to Home Screen</b>":"📱 আইফোনে অ্যাপ বসাতে নিচের <b>Share ⬆️</b> → <b>Add to Home Screen</b> ক্লিক করুন";e.classList.add("on")};document.readyState=="loading"?document.addEventListener("DOMContentLoaded",f):f()}catch(e){}})();let LGB=0;
 async function logoHome(src){if(TOUR)tourEnd();hsClose();vpClose();const pv=document.getElementById("pv");if(pv&&pv.classList.contains("on"))closePV();
 if(tab!="home"){go("home");return}if(src=="side"){mn(0);return}
