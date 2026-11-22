@@ -1051,7 +1051,7 @@ act("poll_edit",{id:ev.id,question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r")
 function pollAdd(){const q=fv("v_q");if(!q)return toast(t("vq")+"?",1);const opts=VK=="yn"?[t("vyes"),t("vno")]:fv("v_o").split("\n").map(x=>x.trim()).filter(Boolean);if(opts.length<2)return toast(t("vopts")+"?",1);act("poll_add",{question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r"),end:dmy(fv("v_e"))})}
 function pollClose(id,open){act("poll_close",{id,open})}
 async function pollDel(id){if(await ask(t("vq2"),1))act("poll_del",{id},t("delm"))}
-const APPV="157";/* রিলিজের সময় sw.js-এর C-র সঙ্গে মিলিয়ে বাড়াতে হবে */const verTxt=()=>t("ver")+" · v"+(L=="bn"?bnD(APPV):APPV);
+const APPV="158";/* রিলিজের সময় sw.js-এর C-র সঙ্গে মিলিয়ে বাড়াতে হবে */const verTxt=()=>t("ver")+" · v"+(L=="bn"?bnD(APPV):APPV);
 (function(){try{const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),sa=navigator.standalone||matchMedia("(display-mode: standalone)").matches;if(!ios||sa)return;const f=()=>{const e=document.getElementById("ioshint");if(!e)return;e.innerHTML=L=="en"?"📱 To install on iPhone: click <b>Share ⬆️</b> below → <b>Add to Home Screen</b>":"📱 আইফোনে অ্যাপ বসাতে নিচের <b>Share ⬆️</b> → <b>Add to Home Screen</b> ক্লিক করুন";e.classList.add("on")};document.readyState=="loading"?document.addEventListener("DOMContentLoaded",f):f()}catch(e){}})();let LGB=0;
 async function logoHome(src){if(TOUR)tourEnd();hsClose();vpClose();const pv=document.getElementById("pv");if(pv&&pv.classList.contains("on"))closePV();
 if(tab!="home"){go("home");return}if(src=="side"){mn(0);return}
@@ -1764,11 +1764,15 @@ if(k.length>1&&g.d){const m=[(k[0][0]+k[1][0])/2,(k[0][1]+k[1][1])/2];c.x+=m[0]-
 else{c.x+=k[0][0]-g.m[0];c.y+=k[0][1]-g.m[1];g.m=k[0];pcDraw()}});
 const up=e=>{delete P[e.pointerId];st()};v.addEventListener("pointerup",up);v.addEventListener("pointercancel",up);
 v.addEventListener("wheel",e=>{e.preventDefault();const p=pos(e);pcZoom(c.z*(e.deltaY<0?1.1:1/1.1),p[0],p[1])},{passive:false});pcDraw()}
+// ছোট (≤৪৫,০০০ অক্ষর — পুরোনো সার্ভারের জন্য) ও উচ্চমান (৭২০px, ≤১,৫০,০০০ অক্ষর — সার্ভার 6.1 কয়েক ঘরে ভাগ করে রাখে) দুটোই পাঠানো হয়
+function pcHi(){const c=PC,k=c.b*c.z,sx=-c.x/k,sy=-c.y/k,sz=c.V/k,src=Math.min(c.im.naturalWidth||c.im.width,c.im.naturalHeight||c.im.height);let out="";
+for(const [d0,q] of [[720,.86],[720,.8],[720,.74],[640,.74],[560,.72],[480,.7]]){const d=Math.min(d0,Math.max(320,Math.round(sz>0?Math.min(src,sz):d0)));const cv=document.createElement("canvas");cv.width=cv.height=d;const g=cv.getContext("2d");g.imageSmoothingQuality="high";g.drawImage(c.im,sx,sy,sz,sz,0,0,d,d);out=cv.toDataURL("image/jpeg",q);if(out.length<=150000)break}
+return out&&out.length<=150000?out:""}
 function pcOut(){const c=PC,k=c.b*c.z,sx=-c.x/k,sy=-c.y/k,sz=c.V/k;let out="";
 for(const [d,q] of [[320,.85],[288,.78],[256,.72],[224,.65],[192,.6],[160,.55]]){const cv=document.createElement("canvas");cv.width=cv.height=d;const g=cv.getContext("2d");g.imageSmoothingQuality="high";g.drawImage(c.im,sx,sy,sz,sz,0,0,d,d);out=cv.toDataURL("image/jpeg",q);if(out.length<=45000)break}
 return out&&out.length<=45000?out:""}
 function phClose(){const d=document.getElementById("phm");if(d)d.remove();if(PC){URL.revokeObjectURL(PC.url);PC=null}}
-async function phSave(){if(!PC)return;let o="";try{o=pcOut()}catch(e){}phClose();if(!o)return toast(t("phx_bad"),1);PHN=o;const n=USER.name,img=PHN;if(await act("photo_set",{img},t("ph_ok"))){PH[n]={img,v:(D.phv||{})[n]||"l"};phStore();render(1)}}
+async function phSave(){if(!PC)return;let o="",hi="";try{o=pcOut();hi=pcHi()}catch(e){}phClose();if(!o)return toast(t("phx_bad"),1);PHN=o;const n=USER.name,img=PHN,p={img};if(hi&&hi.length>o.length)p.hi=hi;if(await act("photo_set",p,t("ph_ok"))){PH[n]={img:p.hi||img,v:"l"};phStore();PHS=0;phSync();render(1)}}
 async function phDel(){if(!await ask(t("ph_delq"),1))return;act("photo_del",{},t("ph_delok"))}
 async function phDelA(n){if(!await ask(t("ph_adelq").replace("{n}",n),1))return;act("photo_del",{name:n},t("ph_delok"))}
 /* ---- 5.1: ব্যাংক রশিদের ছবি — সদস্য দেন, ক্যাশিয়ার দেখে যাচাই করেন (জুম + সেভ) ---- */
