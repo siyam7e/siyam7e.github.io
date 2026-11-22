@@ -983,7 +983,7 @@ act("poll_edit",{id:ev.id,question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r")
 function pollAdd(){const q=fv("v_q");if(!q)return toast(t("vq")+"?",1);const opts=VK=="yn"?[t("vyes"),t("vno")]:fv("v_o").split("\n").map(x=>x.trim()).filter(Boolean);if(opts.length<2)return toast(t("vopts")+"?",1);act("poll_add",{question:q,desc:fv("v_d"),options:opts,rule:+fv("v_r"),end:dmy(fv("v_e"))})}
 function pollClose(id,open){act("poll_close",{id,open})}
 async function pollDel(id){if(await ask(t("vq2"),1))act("poll_del",{id},t("delm"))}
-const APPV="146";/* রিলিজের সময় sw.js-এর C-র সঙ্গে মিলিয়ে বাড়াতে হবে */const verTxt=()=>t("ver")+" · v"+(L=="bn"?bnD(APPV):APPV);
+const APPV="147";/* রিলিজের সময় sw.js-এর C-র সঙ্গে মিলিয়ে বাড়াতে হবে */const verTxt=()=>t("ver")+" · v"+(L=="bn"?bnD(APPV):APPV);
 (function(){try{const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),sa=navigator.standalone||matchMedia("(display-mode: standalone)").matches;if(!ios||sa)return;const f=()=>{const e=document.getElementById("ioshint");if(!e)return;e.innerHTML=L=="en"?"📱 To install on iPhone: click <b>Share ⬆️</b> below → <b>Add to Home Screen</b>":"📱 আইফোনে অ্যাপ বসাতে নিচের <b>Share ⬆️</b> → <b>Add to Home Screen</b> ক্লিক করুন";e.classList.add("on")};document.readyState=="loading"?document.addEventListener("DOMContentLoaded",f):f()}catch(e){}})();let LGB=0;
 async function logoHome(src){if(TOUR)tourEnd();hsClose();vpClose();const pv=document.getElementById("pv");if(pv&&pv.classList.contains("on"))closePV();
 if(tab!="home"){go("home");return}if(src=="side"){mn(0);return}
@@ -1332,7 +1332,7 @@ const stPill=s=>pl(s=="a"?"pg":s=="r"?"pr":s=="c"?"pz":"po",t("st_"+s));
 function payExp(x){if(isSpc(x))return 0;if(x.type=="জরিমানা"){const q=D.fines.find(f=>f[0]==x.m&&String(f[3]).trim()==x.mon);return q?q[1]:0}const m=D.members.find(q=>q[0]==x.m),mi=fm(x.mon);return m?(mi>=0?tex(m,mi):m[1]*1000):0}
 const fineDueC=(name,mon)=>{const q=D.fines.find(f=>f[0]==name&&String(f[3]).trim()==String(mon).trim()&&f[2]!="paid");return q?q[1]:-1};
 function fineNote(pre,name){const n=document.getElementById(pre+"_fn"),v=fv(pre+"_m");if(!n)return;name=name||fv(pre+"_who");const d=v.startsWith("f:")?fineDueC(name,v.slice(2)):-1;n.textContent=d>0?t("fwarn").replace("{a}",f(d)):"";n.style.display=d>0?"block":"none"}
-function payTargets(name,mo){const mons=MN.map((_,i)=>`<option value="m:${i}"${i==mo?" selected":""}>${mName(i)}</option>`).join(""),fs=D.fines.filter(q=>q[0]==name&&q[2]!="paid");
+function payTargets(name,mo){const mons=MN.map((_,i)=>`<option value="m:${i}"${i==mo?" selected":""}>${L=="bn"?MFB[i]:new Date(2000,i,1).toLocaleString("en-GB",{month:"long"})}</option>`).join(""),fs=D.fines.filter(q=>q[0]==name&&q[2]!="paid");
 return mons+(fs.length?`<optgroup label="${t("pfine")}">${fs.map(q=>`<option value="f:${esc(q[3])}">${t("pfine")} – ${mLabel(q[3])} – ${f(q[1])}</option>`).join("")}</optgroup>`:"")+`<optgroup label="${t("xtr")}"><option value="s:">${t("psp")}</option></optgroup>`}
 function payPre(pre,name){const v=fv(pre+"_m"),a=document.getElementById(pre+"_a");if(!a)return;name=name||fv(pre+"_who");
 let e=0;if(v.startsWith("s:")){a.value="";fineNote(pre,name);return}if(v.startsWith("f:")){const q=D.fines.find(f=>f[0]==name&&String(f[3])==v.slice(2)&&f[2]!="paid");e=q?q[1]:0}else{const m=D.members.find(q=>q[0]==name),mi=+String(v).replace(/^m:/,"");e=m?(mi>=0&&mi<12?(spR(curY(),mi)?Math.max(0,tex(m,mi)-tpd(m,mi))||tex(m,mi):tex(m,mi)):m[1]*1000):0}if(e)a.value=e;fineNote(pre,name)}
