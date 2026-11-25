@@ -156,7 +156,7 @@ function props() {
     setProperty: function (k, v) { P.setProperty(k, v); A()[k] = String(v); return __PC; },
     deleteProperty: function (k) { P.deleteProperty(k); delete A()[k]; return __PC; },
     getProperties: function () { return Object.assign({}, A()); },
-    setProperties: function (o, d) { P.setProperties(o, d); if (d) all = null; else Object.keys(o).forEach(function (k) { A()[k] = String(o[k]); }); return __PC; },
+    setProperties: function (o, d) { if (d) P.setProperties(o, true); else P.setProperties(o); if (d) all = null; else Object.keys(o).forEach(function (k) { A()[k] = String(o[k]); }); return __PC; },
     getKeys: function () { return Object.keys(A()); }
   };
   return __PC;
