@@ -1197,7 +1197,7 @@ function payAction(q, u) {
       if (u.role !== "admin") {   // 6.7: ক্যাশিয়ারের বদল = অ্যাডমিনের অনুমতির রিকোয়েস্ট (সিয়ামের সিদ্ধান্ত, ২৫-১১-২০২৬)
         if (p.getProperty("pi_req")) throw new Error("আগের রিকোয়েস্ট এখনো অ্যাডমিনের অনুমতির অপেক্ষায়");
         p.setProperty("pi_req", JSON.stringify({ num: n, type: ty, wa: wa ? "+" + wa : "", by: u.name, byu: u.username, at: now() }));
-        pushQ(piAdmins(), { t: "📲 নাম্বার বদলের রিকোয়েস্ট", b: u.name + " টাকা পাঠানোর নাম্বার " + n + " করতে চান — অনুমতি দিন বা প্রত্যাখ্যান করুন", u: "cash", k: "req" }, u.username);
+        pushQ(piAdmins(), { t: "📲 নাম্বার বদলের রিকোয়েস্ট", b: u.name + " টাকা পাঠানোর নাম্বার " + n + " করতে চান — অনুমতি দিন বা প্রত্যাখ্যান করুন", u: "cash:oth", k: "req" }, u.username);
         return { pend: 1 };
       }
       piApply(n, ty, wa ? "+" + wa : "", u);
@@ -1210,8 +1210,8 @@ function payAction(q, u) {
       if (!rq) throw new Error("কোনো অপেক্ষমাণ রিকোয়েস্ট নেই");
       p.deleteProperty("pi_req"); q.num = rq.num; q.by = rq.by;
       if (q.action === "pay_info_ok") piApply(rq.num, rq.type, rq.wa, u, rq.byu);
-      pushQ([rq.byu], q.action === "pay_info_ok" ? { t: "✅ নাম্বার বদল অনুমোদিত", b: "টাকা পাঠানোর নাম্বার এখন " + rq.num + " (অনুমতি: " + u.name + ")", u: "cash", k: "req" }
-        : { t: "❌ নাম্বার বদল প্রত্যাখ্যাত", b: rq.num + " — অ্যাডমিন " + u.name + " অনুমতি দেননি; আগের নাম্বারই থাকছে", u: "cash", k: "req" });
+      pushQ([rq.byu], q.action === "pay_info_ok" ? { t: "✅ নাম্বার বদল অনুমোদিত", b: "টাকা পাঠানোর নাম্বার এখন " + rq.num + " (অনুমতি: " + u.name + ")", u: "cash:oth", k: "req" }
+        : { t: "❌ নাম্বার বদল প্রত্যাখ্যাত", b: rq.num + " — অ্যাডমিন " + u.name + " অনুমতি দেননি; আগের নাম্বারই থাকছে", u: "cash:oth", k: "req" });
       return {};
     }
     case "pay_rem": {      // \u0995\u09cd\u09af\u09be\u09b6\u09bf\u09af\u09bc\u09be\u09b0/\u0985\u09cd\u09af\u09be\u09a1\u09ae\u09bf\u09a8: \u0995\u09be\u0995\u09c7 WhatsApp \u09b0\u09bf\u09ae\u09be\u0987\u09a8\u09cd\u09a1\u09be\u09b0 \u09aa\u09be\u09a0\u09be\u09a8\u09cb \u09b9\u09b2\u09cb
