@@ -1,4 +1,4 @@
-const C="uif-v207",A=["./","index.html","manifest.json","logo.png","icon-192.png","badge-72.png"];
+const C="uif-v208",A=["./","index.html","manifest.json","logo.png","icon-192.png","badge-72.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)).catch(()=>{}));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!=C&&x!="uif-flag").map(x=>caches.delete(x)))));self.clients.claim()});
 // v194: ফোনে রাখা কপি দিয়ে সাথে সাথে খোলে, পেছনে নতুনটা নামিয়ে রাখে (নতুন সংস্করণ এলে "আপডেট করুন" বার্তা আগের মতোই)
