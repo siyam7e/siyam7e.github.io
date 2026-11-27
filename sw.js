@@ -1,10 +1,11 @@
-const C="uif-v216",A=["./","index.html","pn-en.js","manifest.json","logo.png","icon-192.png","badge-72.png"];
+const C="uif-v217",A=["./","index.html","pn-en.js","manifest.json","logo.png","icon-192.png","badge-72.png"];
 try{importScripts("pn-en.js")}catch(x){}
-self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)).catch(()=>{}));self.skipWaiting()});
+self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A.map(u=>new Request(u,{cache:"reload"})))).catch(()=>{}));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!=C&&x!="uif-flag").map(x=>caches.delete(x)))));self.clients.claim()});
+// v217: নতুন সংস্করণ নামানোর সময় ব্রাউজারের পুরোনো কপি নয়, সবসময় সার্ভারের টাটকা ফাইল (cache:"reload"/"no-cache") — পুরোনো-নতুন ফাইল মিশে যাওয়া রোধ
 // v194: ফোনে রাখা কপি দিয়ে সাথে সাথে খোলে, পেছনে নতুনটা নামিয়ে রাখে (নতুন সংস্করণ এলে "আপডেট করুন" বার্তা আগের মতোই)
 self.addEventListener("fetch",e=>{const q=e.request;if(q.method!="GET"||new URL(q.url).origin!=location.origin)return;const nav=q.mode=="navigate",k=nav?"index.html":q;
-e.respondWith(caches.open(C).then(c=>c.match(k).then(h=>{const n=fetch(q).then(r=>{if(r&&r.ok&&r.type=="basic")c.put(k,r.clone()).catch(()=>{});return r});if(h){try{e.waitUntil(n.catch(()=>{}))}catch(x){}return h}return n.catch(()=>caches.match(q))})))});
+e.respondWith(caches.open(C).then(c=>c.match(k).then(h=>{const n=fetch(nav?new Request(q.url,{cache:"no-cache",credentials:"same-origin"}):new Request(q,{cache:"no-cache"})).then(r=>{if(r&&r.ok&&r.type=="basic")c.put(k,r.clone()).catch(()=>{});return r});if(h){try{e.waitUntil(n.catch(()=>{}))}catch(x){}return h}return n.catch(()=>caches.match(q))})))});
 // ফোনে নোটিফিকেশন (Firebase থেকে আসে)
 self.addEventListener("push",e=>{let j={};try{j=e.data?e.data.json():{}}catch(x){try{j={data:{body:e.data.text()}}}catch(y){}}
 const d=j.data||j,n=j.notification||{},url=d.url||"home";let title=d.title||n.title||"UIF",body=d.body||n.body||"",lg="bn";
