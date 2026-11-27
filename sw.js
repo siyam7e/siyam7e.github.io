@@ -1,4 +1,4 @@
-const C="uif-v217",A=["./","index.html","pn-en.js","manifest.json","logo.png","icon-192.png","badge-72.png"];
+const C="uif-v218",A=["./","index.html","pn-en.js","manifest.json","logo.png","icon-192.png","badge-72.png"];
 try{importScripts("pn-en.js")}catch(x){}
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A.map(u=>new Request(u,{cache:"reload"})))).catch(()=>{}));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!=C&&x!="uif-flag").map(x=>caches.delete(x)))));self.clients.claim()});
